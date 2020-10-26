@@ -1,24 +1,21 @@
-#pragma once 
+#pragma once
 
 #include "SDL2/SDL.h"
 
-
-struct Window {
+struct Window
+{
 
 	bool ready = false;
-	SDL_Window* gWindow;
-	SDL_Renderer* gRenderer;
+	SDL_Window *gWindow;
+	SDL_Renderer *gRenderer;
 	SDL_GLContext gl_context;
 	SDL_Rect viewport;
-
 
 	uint32_t wwidth = 1180;
 	uint32_t wheight = 600;
 
-
-
-
-	Window(uint32_t width, uint32_t height) :wwidth(width), wheight(height) {
+	Window(uint32_t width, uint32_t height) : wwidth(width), wheight(height)
+	{
 		if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		{
 			printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
@@ -34,12 +31,11 @@ struct Window {
 			return;
 		}
 
-		viewport = SDL_Rect{ 0, 50, (int)wwidth, (int)wheight - 50 };
+		viewport = SDL_Rect{0, 50, (int)wwidth, (int)wheight - 50};
 
 		SDL_GL_SetSwapInterval(1); // Enable vsync
 		gl_context = SDL_GL_CreateContext(gWindow);
 		SDL_GL_MakeCurrent(gWindow, gl_context);
-
 
 		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
 		gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED);
@@ -54,7 +50,8 @@ struct Window {
 		ready = true;
 	}
 
-	~Window() {
+	~Window()
+	{
 		SDL_GL_DeleteContext(gl_context);
 
 		// Destroy window
@@ -66,7 +63,4 @@ struct Window {
 		// Quit SDL subsystems
 		SDL_Quit();
 	}
-
-
-
 };

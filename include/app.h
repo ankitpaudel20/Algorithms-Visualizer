@@ -165,21 +165,7 @@ public:
 
 						if (ImGui::Button("GO"))
 						{
-							switch (combo_selected)
-							{
-							case 0:
-								std::cout << "bubble sort\n";
-								sort.run(combo_selected);
-								break;
-							case 1:
-								printf("selection sort\n");
-								break;
-							case 2:
-								printf("quick sort\n");
-								break;
-							default:
-								break;
-							}
+							sort.run(combo_selected);
 							m_state = appState::Animating;
 						}
 
@@ -218,6 +204,9 @@ public:
 
 					ImGui::Text("sleep time :%f", sort.sleeptime);
 					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+					ImGui::Text("swap Pos: %d ,%d", sort.swapPos[0], sort.swapPos[1]);
+					ImGui::Text("copy Pos: %d ,%d", sort.copyPos[0], sort.copyPos[1]);
+					ImGui::Text("comp Pos: %d ,%d", sort.compPos[0], sort.compPos[1]);
 
 					ImGui::SetWindowSize(ImVec2(m_window->wwidth, ImGui::GetWindowSize().y));
 					ImGui::SetWindowPos(ImVec2(0, 0), false);
@@ -259,7 +248,13 @@ private:
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-	std::vector<std::string> options{"bubblesort", "selection sort", "Merge sort", "quick sort"};
+	std::vector<std::string> options{
+		"selection sort",
+		"quick sort",
+		"Merge sort",
+		"insertion sort",
+		"bubble sort",
+	};
 	int combo_selected = 0;
 };
 

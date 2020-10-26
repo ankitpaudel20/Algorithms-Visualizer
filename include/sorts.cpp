@@ -100,44 +100,6 @@ void sortingClass::quicksort()
 	sorted = true;
 }
 
-void sortingClass::radixsort()
-{
-	unsigned max = 0;
-
-	size_t i, j, k, l;
-	for (i = 0; i < m_data.size(); i++)
-		max = (m_data[i] > max) ? m_data[i] : max;
-
-	int no_digits = 1;
-	while (max >= 10)
-	{
-		no_digits++;
-		max = max / 10;
-	}
-
-	std::vector<std::vector<uint32_t>> buckets(10);
-
-	for (i = 0; i < 10; i++)
-		buckets[i].reserve(m_data.size() / 5);
-
-	uint32_t mul = 1;
-
-	for (i = 0; i < no_digits; i++)
-	{
-		mul = std::pow(10, i);
-
-		for (j = 0; j < m_data.size(); j++)
-			buckets[(m_data[j] / mul) % 10].push_back(m_data[j]);
-
-		for (j = 0, k = 0; j < 10; j++)
-		{
-			for (l = 0; l < buckets[j].size(); l++)
-				m_data[k++] = buckets[j][l];
-			buckets[j].clear();
-		}
-	}
-}
-
 void sortingClass::merge(uint32_t *arr, const size_t &a, const size_t &m, const size_t &b)
 {
 	auto size = sizeof(uint32_t);
@@ -199,20 +161,23 @@ void sortingClass::insertionsort()
 			// if (m_data[j] < m_data[i])
 			if (cmpless(j, i))
 			{
-				temp = m_data[i];
-				// memcpy(&m_data[0] + j + 1, &m_data[0] + j, (i - j) * sizeof(uint32_t));
-				memcopy(j + 1, j, (i - j));
-				m_data[j + 1] = temp;
+				// temp = m_data[i];
+				// memcopy(j + 1, j, (i - j));
+				// m_data[j + 1] = temp;
+				for (k = i; k > j + 1; k--)
+					swap(k, k - 1);
 				break;
 			}
 		}
 		if (j > m_data.size())
 		{
-			temp = m_data[i];
-			// memcpy(&m_data[0] + 1, &m_data[0], i * sizeof(uint32_t));
-			memcopy(1, 0, i);
+			for (size_t k = i; k > 0; k--)
+				swap(k, k - 1);
 
-			m_data[0] = temp;
+			// temp = m_data[i];
+			// memcpy(&m_data[0] + 1, &m_data[0], i * sizeof(uint32_t));
+			// memcopy(1, 0, i);
+			// m_data[0] = temp;
 		}
 	}
 	sorted = true;
@@ -226,4 +191,42 @@ void sortingClass::bubblesort()
 			if (cmp(j - 1, j))
 				swap(j - 1, j);
 	sorted = true;
+}
+
+void sortingClass::radixsort()
+{
+	unsigned max = 0;
+
+	size_t i, j, k, l;
+	for (i = 0; i < m_data.size(); i++)
+		max = (m_data[i] > max) ? m_data[i] : max;
+
+	int no_digits = 1;
+	while (max >= 10)
+	{
+		no_digits++;
+		max = max / 10;
+	}
+
+	std::vector<std::vector<uint32_t>> buckets(10);
+
+	for (i = 0; i < 10; i++)
+		buckets[i].reserve(m_data.size() / 5);
+
+	uint32_t mul = 1;
+
+	for (i = 0; i < no_digits; i++)
+	{
+		mul = std::pow(10, i);
+
+		for (j = 0; j < m_data.size(); j++)
+			buckets[(m_data[j] / mul) % 10].push_back(m_data[j]);
+
+		for (j = 0, k = 0; j < 10; j++)
+		{
+			for (l = 0; l < buckets[j].size(); l++)
+				m_data[k++] = buckets[j][l];
+			buckets[j].clear();
+		}
+	}
 }

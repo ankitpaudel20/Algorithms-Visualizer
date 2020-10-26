@@ -81,7 +81,8 @@ struct sortingClass
 				SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0xFF, 0xFF);
 				copyMutex.lock();
 				glLineWidth(5.0f);
-				for (int i = copyPos[0]; i < copyPos[1]; i++)
+
+				for (int i = copyPos[0], j = 0; j <= copyPos[1]; i++, j++)
 				{
 					SDL_FRect a{(2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i]};
 					SDL_RenderDrawRectF(renderer, &a);
@@ -109,12 +110,6 @@ struct sortingClass
 			}
 			else
 			{
-				/* printf("values after sort : ");
-				for (auto i : m_data)
-				{
-					printf("%d, ", i);
-				}
-				printf("\n"); */
 
 				if (thread->joinable())
 					thread->join();
@@ -122,6 +117,9 @@ struct sortingClass
 				thread = nullptr;
 				state = appState::Idle;
 				sorted = false;
+				swapPos.clear();
+				copyPos.clear();
+				compPos.clear();
 			}
 		}
 		//SDL_Rect rect{ width, 0, viewport.w - 2 * width, viewport.h };
@@ -132,7 +130,8 @@ struct sortingClass
 		compPos.emplace_back(left);
 		compPos.emplace_back(right);
 		int a = sleeptime * 1000;
-		std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		// std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		SDL_Delay(a);
 		compMutex.lock();
 		compPos.clear();
 		compMutex.unlock();
@@ -144,7 +143,8 @@ struct sortingClass
 		compPos.emplace_back(left);
 		compPos.emplace_back(right);
 		int a = sleeptime * 1000;
-		std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		// std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		SDL_Delay(a);
 		compMutex.lock();
 		compPos.clear();
 		compMutex.unlock();
@@ -156,11 +156,13 @@ struct sortingClass
 		swapPos.emplace_back(left);
 		swapPos.emplace_back(right);
 		int a = sleeptime * 1000;
-		std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		// std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		SDL_Delay(a);
 		uint32_t temp = m_data[left];
 		m_data[left] = m_data[right];
 		m_data[right] = temp;
-		std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		// std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		SDL_Delay(a);
 
 		swapMutex.lock();
 		swapPos.clear();
@@ -172,11 +174,13 @@ struct sortingClass
 		auto *arr = &m_data[0];
 		copyPos.emplace_back(from);
 		copyPos.emplace_back(number);
-		int a = sleeptime * 1000;
+		int a = sleeptime * 1000 * 3;
 		std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		// SDL_Delay(a);
 		memcpy(arr + to, arr + from, number * sizeof(uint32_t));
 		copyPos[0] = to;
 		std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		// SDL_Delay(a);
 
 		copyMutex.lock();
 		copyPos.clear();
@@ -185,16 +189,26 @@ struct sortingClass
 
 	void run(int selection)
 	{
-		if (selection == 0)
+
+		switch (selection)
 		{
-			/* printf("values before sort : ");
-			for (auto i : m_data)
-			{
-				printf("%d, ", i);
-			}
-			printf("\n"); */
-			// insertionsort();
+		case 0:
+			thread = new std::thread(&sortingClass::selectionsort, this);
+			break;
+		case 1:
+			thread = new std::thread(&sortingClass::quicksort, this);
+			break;
+		case 2:
+			thread = new std::thread(&sortingClass::mergesort, this);
+			break;
+		case 3:
 			thread = new std::thread(&sortingClass::insertionsort, this);
+			break;
+		case 4:
+			thread = new std::thread(&sortingClass::bubblesort, this);
+			break;
+		default:
+			break;
 		}
 	}
 
