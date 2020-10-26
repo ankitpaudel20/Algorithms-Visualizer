@@ -195,7 +195,7 @@ public:
 						}
 					}
 					//stop button
-					ImGui::SameLine();
+					/*ImGui::SameLine();
 					{
 						if (m_state == appState::Idle)
 						{
@@ -215,7 +215,7 @@ public:
 							ImGui::PopItemFlag();
 							ImGui::PopStyleVar();
 						}
-					}
+					}*/
 
 					ImGui::PushItemWidth(200);
 					ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sort.sleeptime, &flow, &fhigh);
