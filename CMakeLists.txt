@@ -11,7 +11,7 @@ target_sources(Application PRIVATE
         vendor/imgui/imgui_draw.cpp
         vendor/imgui/imgui_impl_sdl.cpp
         vendor/imgui/imgui_impl_opengl3.cpp
-        vendor/glad/glad.cpp         )
+        vendor/glad/glad.cpp          "include/sorts.cpp")
 
       
 

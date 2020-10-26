@@ -1,9 +1,9 @@
 #ifndef APP_H
 #define APP_H
-#include<iostream>
-#include<vector>
-#include"states.h"
-#include"window.h"
+#include <iostream>
+#include <vector>
+#include "states.h"
+#include "window.h"
 #include "sort.h"
 
 #include "glad/glad.h"
@@ -19,17 +19,15 @@ public:
 	app()
 	{
 		m_window = new Window(1180, 600);
-		sort.window = m_window;
-		sort.width = m_window->wwidth / sort.N * 0.95;
+		sort.viewport = &m_window->viewport;
+		sort.width = m_window->viewport.w / sort.N * 0.95;
 		sort.randomize(m_window->viewport);
-
 
 		if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
 		{
 			std::cout << "Failed to initialize GLAD" << std::endl;
 			return;
 		}
-
 
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -42,7 +40,6 @@ public:
 		ImGui_ImplOpenGL3_Init("#version 130");
 
 		m_state = appState::Idle;
-
 	}
 
 	~app()
@@ -56,10 +53,9 @@ public:
 	{
 		SDL_ShowWindow(m_window->gWindow);
 
-
 		bool listGrayed, stopButtonGrayed;
 		static float flow = 0.0f;
-		static float fhigh = 1.0f;
+		static float fhigh = 0.3f;
 		while (!closeWindow)
 		{
 			while (SDL_PollEvent(&evnt) != 0)
@@ -103,12 +99,7 @@ public:
 				}
 			}
 
-			switch (combo_selected)
-			{
-			default:
-				sort.Draw();
-				break;
-			}
+			sort.Draw(m_state, m_window->gRenderer);
 
 			//IMGUI rendering
 			{
@@ -166,7 +157,10 @@ public:
 						ImGui::PopItemWidth();
 
 						if (ImGui::Button("Reload"))
+						{
 							sort.randomize(m_window->viewport);
+							//sort.width = m_window->wwidth / sort.N * 0.95;
+						}
 						ImGui::SameLine();
 
 						if (ImGui::Button("GO"))
@@ -174,7 +168,8 @@ public:
 							switch (combo_selected)
 							{
 							case 0:
-								printf("bubble sort\n");
+								std::cout << "bubble sort\n";
+								sort.run(combo_selected);
 								break;
 							case 1:
 								printf("selection sort\n");
@@ -239,26 +234,33 @@ public:
 			SDL_RenderPresent(m_window->gRenderer);
 			glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 			glClear(GL_COLOR_BUFFER_BIT);
-
 		}
 	}
 
 private:
-
+	void drawRectoutline(const float &pos, const uint32_t &height)
+	{
+		Uint8 r, g, b, a;
+		SDL_GetRenderDrawColor(m_window->gRenderer, &r, &g, &b, &a);
+		SDL_RenderSetViewport(m_window->gRenderer, &m_window->viewport);
+		SDL_SetRenderDrawColor(m_window->gRenderer, 0xFF, 0x00, 0x00, 0xFF);
+		SDL_FRect temp{pos - sort.width / 2, m_window->viewport.h - height, sort.width, height};
+		SDL_RenderDrawRectF(m_window->gRenderer, &temp);
+		SDL_SetRenderDrawColor(m_window->gRenderer, r, g, b, a);
+	}
 
 	appState m_state;
-	Window* m_window;
+	Window *m_window;
 
 	SDL_Event evnt;
 	bool closeWindow = false;
 
-	sortingClass<uint32_t> sort;
+	sortingClass sort;
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-	std::vector<std::string> options{ "bubblesort", "selection sort", "Merge sort", "quick sort" };
+	std::vector<std::string> options{"bubblesort", "selection sort", "Merge sort", "quick sort"};
 	int combo_selected = 0;
-
 };
 
 #endif // APP_H
