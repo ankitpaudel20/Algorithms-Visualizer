@@ -5,6 +5,7 @@
 #include <vector>
 #include <array>
 #include <mutex>
+#include <cstring>
 
 #include "window.h"
 #include "states.h"
@@ -42,9 +43,9 @@ struct sortingClass
 	std::vector<uint32_t> m_data;
 	bool sorted = false;
 
-	SDL_Rect *viewport;
+	SDL_Rect* viewport;
 
-	std::thread *thread = nullptr;
+	std::thread* thread = nullptr;
 
 	sortingClass()
 	{
@@ -53,16 +54,16 @@ struct sortingClass
 		copyPos.reserve(2);
 	}
 
-	void randomize(const SDL_Rect &viewport)
+	void randomize(const SDL_Rect& viewport)
 	{
 		m_data = random_generator<uint32_t>(0, viewport.h, N);
-		spacing = (float)viewport.w / ((N)*2);
+		spacing = (float)viewport.w / ((N) * 2);
 
 		if (width > viewport.w / N * 0.95)
 			width = viewport.w / N * 0.95;
 	}
 
-	void Draw(appState &state, SDL_Renderer *renderer)
+	void Draw(appState& state, SDL_Renderer* renderer)
 	{
 		SDL_RenderSetViewport(renderer, viewport);
 
@@ -70,7 +71,7 @@ struct sortingClass
 
 		for (int i = 0; i < m_data.size(); i++)
 		{
-			SDL_FRect a{(2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i]};
+			SDL_FRect a{ (2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i] };
 			SDL_RenderFillRectF(renderer, &a);
 		}
 
@@ -81,11 +82,13 @@ struct sortingClass
 				SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0xFF, 0xFF);
 				copyMutex.lock();
 				glLineWidth(5.0f);
-
-				for (int i = copyPos[0], j = 0; j <= copyPos[1]; i++, j++)
+				if (!copyPos.empty())
 				{
-					SDL_FRect a{(2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i]};
-					SDL_RenderDrawRectF(renderer, &a);
+					for (int i = copyPos[0], j = 0; j <= copyPos[1]; i++, j++)
+					{
+						SDL_FRect a{ (2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i] };
+						SDL_RenderDrawRectF(renderer, &a);
+					}
 				}
 				copyMutex.unlock();
 
@@ -93,7 +96,7 @@ struct sortingClass
 				swapMutex.lock();
 				for (auto i : swapPos)
 				{
-					SDL_FRect a{(2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i]};
+					SDL_FRect a{ (2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i] };
 					SDL_RenderFillRectF(renderer, &a);
 				}
 				swapMutex.unlock();
@@ -103,7 +106,7 @@ struct sortingClass
 				glLineWidth(5.0f);
 				for (auto i : compPos)
 				{
-					SDL_FRect a{(2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i]};
+					SDL_FRect a{ (2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i] };
 					SDL_RenderDrawRectF(renderer, &a);
 				}
 				compMutex.unlock();
@@ -125,7 +128,7 @@ struct sortingClass
 		//SDL_Rect rect{ width, 0, viewport.w - 2 * width, viewport.h };
 	}
 
-	inline bool cmp(const size_t &left, const size_t &right)
+	inline bool cmp(const size_t& left, const size_t& right)
 	{
 		compPos.emplace_back(left);
 		compPos.emplace_back(right);
@@ -138,7 +141,7 @@ struct sortingClass
 		return m_data[left] > m_data[right];
 	}
 
-	inline bool cmpless(const size_t &left, const size_t &right)
+	inline bool cmpless(const size_t& left, const size_t& right)
 	{
 		compPos.emplace_back(left);
 		compPos.emplace_back(right);
@@ -151,7 +154,7 @@ struct sortingClass
 		return m_data[left] < m_data[right];
 	}
 
-	inline void swap(const size_t &left, const size_t &right)
+	inline void swap(const size_t& left, const size_t& right)
 	{
 		swapPos.emplace_back(left);
 		swapPos.emplace_back(right);
@@ -169,9 +172,9 @@ struct sortingClass
 		swapMutex.unlock();
 	}
 
-	inline void memcopy(const uint32_t &to, const uint32_t &from, const uint32_t &number)
+	inline void memcopy(const uint32_t& to, const uint32_t& from, const uint32_t& number)
 	{
-		auto *arr = &m_data[0];
+		auto* arr = &m_data[0];
 		copyPos.emplace_back(from);
 		copyPos.emplace_back(number);
 		int a = sleeptime * 1000 * 3;
@@ -212,10 +215,10 @@ struct sortingClass
 		}
 	}
 
-	void merge(uint32_t *arr, const size_t &a, const size_t &m, const size_t &b);
-	void mergesortSubroutine(const size_t &a, const size_t &b);
+	void merge(uint32_t* arr, const size_t& a, const size_t& m, const size_t& b);
+	void mergesortSubroutine(const size_t& a, const size_t& b);
 	void mergesort();
-	void qsort(const size_t &start_index, const size_t &end_index);
+	void qsort(const size_t& start_index, const size_t& end_index);
 	void quicksort();
 	void bubblesort();
 	void radixsort();

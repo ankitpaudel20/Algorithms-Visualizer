@@ -204,9 +204,6 @@ public:
 
 					ImGui::Text("sleep time :%f", sort.sleeptime);
 					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-					ImGui::Text("swap Pos: %d ,%d", sort.swapPos[0], sort.swapPos[1]);
-					ImGui::Text("copy Pos: %d ,%d", sort.copyPos[0], sort.copyPos[1]);
-					ImGui::Text("comp Pos: %d ,%d", sort.compPos[0], sort.compPos[1]);
 
 					ImGui::SetWindowSize(ImVec2(m_window->wwidth, ImGui::GetWindowSize().y));
 					ImGui::SetWindowPos(ImVec2(0, 0), false);
@@ -227,19 +224,19 @@ public:
 	}
 
 private:
-	void drawRectoutline(const float &pos, const uint32_t &height)
+	void drawRectoutline(const float& pos, const uint32_t& height)
 	{
 		Uint8 r, g, b, a;
 		SDL_GetRenderDrawColor(m_window->gRenderer, &r, &g, &b, &a);
 		SDL_RenderSetViewport(m_window->gRenderer, &m_window->viewport);
 		SDL_SetRenderDrawColor(m_window->gRenderer, 0xFF, 0x00, 0x00, 0xFF);
-		SDL_FRect temp{pos - sort.width / 2, m_window->viewport.h - height, sort.width, height};
+		SDL_FRect temp{ pos - sort.width / 2, m_window->viewport.h - height, sort.width, height };
 		SDL_RenderDrawRectF(m_window->gRenderer, &temp);
 		SDL_SetRenderDrawColor(m_window->gRenderer, r, g, b, a);
 	}
 
 	appState m_state;
-	Window *m_window;
+	Window* m_window;
 
 	SDL_Event evnt;
 	bool closeWindow = false;
