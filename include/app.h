@@ -224,19 +224,19 @@ public:
 	}
 
 private:
-	void drawRectoutline(const float& pos, const uint32_t& height)
+	void drawRectoutline(const float &pos, const uint32_t &height)
 	{
 		Uint8 r, g, b, a;
 		SDL_GetRenderDrawColor(m_window->gRenderer, &r, &g, &b, &a);
 		SDL_RenderSetViewport(m_window->gRenderer, &m_window->viewport);
 		SDL_SetRenderDrawColor(m_window->gRenderer, 0xFF, 0x00, 0x00, 0xFF);
-		SDL_FRect temp{ pos - sort.width / 2, m_window->viewport.h - height, sort.width, height };
+		SDL_FRect temp{pos - sort.width / 2, m_window->viewport.h - height, sort.width, height};
 		SDL_RenderDrawRectF(m_window->gRenderer, &temp);
 		SDL_SetRenderDrawColor(m_window->gRenderer, r, g, b, a);
 	}
 
 	appState m_state;
-	Window* m_window;
+	Window *m_window;
 
 	SDL_Event evnt;
 	bool closeWindow = false;
@@ -251,7 +251,8 @@ private:
 		"Merge sort",
 		"insertion sort",
 		"bubble sort",
-	};
+		"shell sort",
+		"shell sort2"};
 	int combo_selected = 0;
 };
 

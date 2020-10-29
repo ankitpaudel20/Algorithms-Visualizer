@@ -46,7 +46,7 @@ void sortingClass::qsort(const size_t &start_index, const size_t &end_index)
 			{
 				for (right_iterator; right_iterator <= end_index; right_iterator++)
 				{
-					if (cmpless(right_iterator, pivot))
+					if (cmp(pivot, right_iterator))
 					// if (m_data[right_iterator] < m_data[pivot])
 					{
 						swap(left_iterator, right_iterator);
@@ -78,7 +78,7 @@ void sortingClass::qsort(const size_t &start_index, const size_t &end_index)
 	{
 		for (right_iterator; right_iterator <= end_index; right_iterator++)
 		{
-			if (cmpless(right_iterator, pivot))
+			if (cmp(pivot, right_iterator))
 				// if (m_data[right_iterator] < m_data[pivot])
 				swap(right_iterator, pivot + ++right_unfit_count);
 		}
@@ -108,7 +108,7 @@ void sortingClass::merge(uint32_t *arr, const size_t &a, const size_t &m, const 
 	while (i < m + 1 && j < b + 1)
 	{
 		// if (arr[i] < arr[j])
-		if (cmpless(i, j))
+		if (cmp(j, i))
 			tmp[k] = arr[i++];
 		else
 			tmp[k] = arr[j++];
@@ -147,39 +147,6 @@ void sortingClass::mergesortSubroutine(const size_t &a, const size_t &b)
 void sortingClass::mergesort()
 {
 	mergesortSubroutine(0, m_data.size() - 1);
-	sorted = true;
-}
-
-void sortingClass::insertionsort()
-{
-	size_t i, j, k;
-	uint32_t temp;
-	for (i = 1; i < m_data.size(); i++)
-	{
-		for (j = i - 1; j >= 0 && j < m_data.size(); j--)
-		{
-			// if (m_data[j] < m_data[i])
-			if (cmpless(j, i))
-			{
-				// temp = m_data[i];
-				// memcopy(j + 1, j, (i - j));
-				// m_data[j + 1] = temp;
-				for (k = i; k > j + 1; k--)
-					swap(k, k - 1);
-				break;
-			}
-		}
-		if (j > m_data.size())
-		{
-			for (size_t k = i; k > 0; k--)
-				swap(k, k - 1);
-
-			// temp = m_data[i];
-			// memcpy(&m_data[0] + 1, &m_data[0], i * sizeof(uint32_t));
-			// memcopy(1, 0, i);
-			// m_data[0] = temp;
-		}
-	}
 	sorted = true;
 }
 
@@ -230,4 +197,48 @@ void sortingClass::radixsort()
 			buckets[j].clear();
 		}
 	}
+}
+
+void sortingClass::insertionsort()
+{
+	size_t i, j, k;
+	uint32_t temp;
+	for (i = 1; i < m_data.size(); i++)
+	{
+		for (j = i - 1; j >= 0 && j < m_data.size(); j--)
+		{
+			if (cmp(j, j + 1))
+				swap(j, j + 1);
+			else
+				break;
+		}
+	}
+	sorted = true;
+}
+
+void sortingClass::shellsort2()
+{
+	size_t i, j, k;
+	// int gap = (m_data.size() - 1) / 2;
+	for (int gap = (m_data.size()) / 2; gap > 0; gap = gap / 2)
+		for (i = 0; i < gap; i = i + 1)
+			for (j = i + gap; j < m_data.size(); j += gap)
+				for (k = j - gap; k >= 0 && k < m_data.size() && cmp(k, k + gap); k -= gap)
+					swap(k, k + gap);
+
+	sorted = true;
+}
+
+void sortingClass::shellsort()
+{
+	for (int gap = N / 2; gap > 0; gap /= 2)
+	{
+		for (int i = gap; i < N; i += 1)
+		{
+			int j;
+			for (j = i; j >= gap && cmp(j - gap, j); j -= gap)
+				swap(j, j - gap);
+		}
+	}
+	sorted = true;
 }
