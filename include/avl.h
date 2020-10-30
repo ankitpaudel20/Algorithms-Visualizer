@@ -311,8 +311,6 @@ struct node
 		return max < temp ? temp : max;
 	}
 
-	void refreshpos(uint32_t& maxdepth) {
-	}
 
 	unsigned getHeight()
 	{

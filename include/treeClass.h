@@ -8,8 +8,11 @@
 struct treeClass {
 	avlTree<int> avl;
 	float sleeptime = 0.05;
-	vec2<float> dist = 50;
-	float radius = 15;
+	vec2<float> dist = 75;
+	float radius = 25;
+
+	std::map<std::string, SDL_Texture*>* text_cache;
+	std::map<fontinfo, TTF_Font*>* font_cache;
 
 	int insertBuffer;
 	int deleteBuffer;

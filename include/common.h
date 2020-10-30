@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cmath>
+#include "SDL2/SDL_ttf.h"
 
 template <class T>
 struct vec2
@@ -97,18 +98,16 @@ struct vec2
 	}
 };
 
-struct Circle
-{
 
-	float* radius;
-	vec2<uint32_t> pos;
-	uint32_t color = 0x00ffffff;
-	size_t next = std::numeric_limits<size_t>::max();
-	size_t previous = std::numeric_limits<size_t>::max();
 
-	Circle(float& _radius, const vec2<uint32_t>& _pos) : pos(_pos)
-	{
-		radius = &_radius;
+struct fontinfo {
+	std::string name;
+	int size;
+
+	bool operator>(const fontinfo& rhs)const {
+		return std::string(name + (char)size) > std::string(rhs.name + (char)rhs.size);
 	}
-	Circle() {};
+	bool operator<(const fontinfo& rhs)const {
+		return std::string(name + (char)size) < std::string(rhs.name + (char)rhs.size);
+	}
 };

@@ -8,6 +8,7 @@ target_include_directories(Application PRIVATE include vendor/imgui vendor/inclu
       file(GLOB_RECURSE SDL2_GFX_SOURCES vendor/include/SDL2/*.c)
 
 
+
       target_sources(Application PRIVATE 
         vendor/imgui/imgui.cpp
         vendor/imgui/imgui_widgets.cpp
@@ -23,16 +24,16 @@ target_include_directories(Application PRIVATE include vendor/imgui vendor/inclu
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_link_directories(Application PRIVATE vendor/libs)
-     target_link_libraries(Application PRIVATE sdl2-static SDL2main opengl32 Imm32 version winmm SetupAPI)
+     target_link_libraries(Application PRIVATE sdl2-static libfreetype-6 SDL2main opengl32 Imm32 version winmm SetupAPI)
     message("Linked to windows using MSVC")
 else()
     if (CMAKE_SYSTEM_NAME STREQUAL Linux)
-        target_link_libraries(Application PRIVATE pthread GL X11 GLU SDL2 ${CMAKE_DL_LIBS}) 
+        target_link_libraries(Application PRIVATE pthread GL X11 GLU SDL2 ${CMAKE_DL_LIBS} freetype) 
         message("Linked to Linux")
     elseif (CMAKE_SYSTEM_NAME STREQUAL Windows)
         #target_link_libraries(Application PRIVATE libglew32.dll.a libSDl2.dll.a libSDl2main.a libSDL2_image.dll.a libglew32.a opengl32)
         target_link_directories(Application PRIVATE vendor/libs )
-        target_link_libraries(Application PRIVATE  libSDL2-static.a libSDL2main.a opengl32 Imm32 version winmm SetupAPI pthread)
+        target_link_libraries(Application PRIVATE freetype libSDL2-static.a libSDL2main.a opengl32 Imm32 version winmm SetupAPI pthread)
         message("Linked to windows")
     endif ()
 endif()
