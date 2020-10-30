@@ -5,6 +5,7 @@
 #include "states.h"
 #include "window.h"
 #include "sort.h"
+#include "treeClass.h"
 
 #include "glad/glad.h"
 
@@ -20,6 +21,7 @@ public:
 	{
 		m_window = new Window(1180, 600);
 		sort.viewport = &m_window->viewport;
+		tree.viewport = &m_window->viewport;
 		sort.width = m_window->viewport.w / sort.N * 0.95;
 		sort.randomize(m_window->viewport);
 
@@ -98,8 +100,14 @@ public:
 					}
 				}
 			}
-
-			sort.Draw(m_state, m_window->gRenderer);
+			if (combo_selected < 7)
+			{
+				sort.Draw(m_state, m_window->gRenderer);
+			}
+			else
+			{
+				tree.draw(m_state, m_window->gRenderer);
+			}
 
 			//IMGUI rendering
 			{
@@ -111,7 +119,7 @@ public:
 					ImGui::Begin("test", NULL, ImGuiWindowFlags_NoMove);
 					static float f = 0.0f;
 
-					float space_available = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
+					//float space_available = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
 
 					{
 						if (m_state == appState::Animating)
@@ -139,34 +147,14 @@ public:
 						}
 						ImGui::PopItemWidth();
 
-						ImGui::PushItemWidth((float)m_window->wwidth / 13);
-						ImGui::SameLine();
-						ImGui::Text("Number of datas");
-						ImGui::SameLine();
-						ImGui::InputInt(" | ##no", &sort.N);
-						if (sort.N < 3)
-							sort.N = 3;
-						ImGui::PopItemWidth();
 
-						ImGui::PushItemWidth((float)m_window->wwidth / 5);
-						ImGui::SameLine();
-						ImGui::Text("bar Width");
-						ImGui::SameLine();
-						ImGui::SliderInt(" | ##bw", &sort.width, 1, m_window->viewport.w / (sort.N - 1));
-						ImGui::SameLine();
-						ImGui::PopItemWidth();
-
-						if (ImGui::Button("Reload"))
+						if (combo_selected < 7)
 						{
-							sort.randomize(m_window->viewport);
-							//sort.width = m_window->wwidth / sort.N * 0.95;
+							sort.imguiDraw(m_state, combo_selected, m_window);
 						}
-						ImGui::SameLine();
-
-						if (ImGui::Button("GO"))
+						else
 						{
-							sort.run(combo_selected);
-							m_state = appState::Animating;
+							tree.imguiDraw(m_state, combo_selected, m_window);
 						}
 
 						if (listGrayed)
@@ -201,8 +189,6 @@ public:
 					ImGui::PushItemWidth(200);
 					ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sort.sleeptime, &flow, &fhigh);
 					ImGui::PopItemWidth();
-
-					ImGui::Text("sleep time :%f", sort.sleeptime);
 					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
 					ImGui::SetWindowSize(ImVec2(m_window->wwidth, ImGui::GetWindowSize().y));
@@ -224,24 +210,25 @@ public:
 	}
 
 private:
-	void drawRectoutline(const float &pos, const uint32_t &height)
+	void drawRectoutline(const float& pos, const uint32_t& height)
 	{
 		Uint8 r, g, b, a;
 		SDL_GetRenderDrawColor(m_window->gRenderer, &r, &g, &b, &a);
 		SDL_RenderSetViewport(m_window->gRenderer, &m_window->viewport);
 		SDL_SetRenderDrawColor(m_window->gRenderer, 0xFF, 0x00, 0x00, 0xFF);
-		SDL_FRect temp{pos - sort.width / 2, m_window->viewport.h - height, sort.width, height};
+		SDL_FRect temp{ pos - sort.width / 2, m_window->viewport.h - height, sort.width, height };
 		SDL_RenderDrawRectF(m_window->gRenderer, &temp);
 		SDL_SetRenderDrawColor(m_window->gRenderer, r, g, b, a);
 	}
 
 	appState m_state;
-	Window *m_window;
+	Window* m_window;
 
 	SDL_Event evnt;
 	bool closeWindow = false;
 
 	sortingClass sort;
+	treeClass tree;
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -252,8 +239,10 @@ private:
 		"insertion sort",
 		"bubble sort",
 		"shell sort",
-		"shell sort2"};
-	int combo_selected = 0;
+		"shell sort2",
+		"avl Tree"
+	};
+	int combo_selected = 7;
 };
 
 #endif // APP_H

@@ -10,18 +10,8 @@
 #include "window.h"
 #include "states.h"
 #include "glad/glad.h"
+#include "imgui.h"
 
-template <class T>
-std::vector<T> random_generator(T start, T end, uint32_t count)
-{
-	std::vector<T> out(count);
-	std::random_device rd;
-	std::mt19937 mt(rd());
-	std::uniform_int_distribution<T> dist(start, end);
-	for (unsigned i = 0; i < count; i++)
-		out[i] = dist(mt);
-	return out;
-}
 
 struct sortingClass
 {
@@ -41,9 +31,9 @@ struct sortingClass
 	std::vector<uint32_t> m_data;
 	bool sorted = false;
 
-	SDL_Rect *viewport;
+	SDL_Rect* viewport;
 
-	std::thread *thread = nullptr;
+	std::thread* thread = nullptr;
 
 	sortingClass()
 	{
@@ -52,12 +42,12 @@ struct sortingClass
 		copyPos.reserve(2);
 	}
 
-	void randomize(const SDL_Rect &viewport)
+	void randomize(const SDL_Rect& viewport)
 	{
 		m_data.clear();
 		m_data.reserve(N);
 		for (uint32_t i = 0; i < N; i++)
-			m_data.push_back(viewport.h / (N - 1) * (i + 1));
+			m_data.push_back(viewport.h / N * (i + 1));
 
 		std::random_device rd;
 		std::mt19937 mt(rd());
@@ -65,15 +55,14 @@ struct sortingClass
 		for (size_t i = N - 1; i > 0; i--)
 			swap2(dist(mt) % i, i);
 
-		// m_data = random_generator<uint32_t>(0, viewport.h, N);
 
-		spacing = (float)viewport.w / ((N)*2);
+		spacing = (float)viewport.w / ((N) * 2);
 
 		if (width > viewport.w / N * 0.95)
 			width = viewport.w / N * 0.95;
 	}
 
-	void Draw(appState &state, SDL_Renderer *renderer)
+	void Draw(appState& state, SDL_Renderer* renderer)
 	{
 		SDL_RenderSetViewport(renderer, viewport);
 
@@ -81,7 +70,7 @@ struct sortingClass
 
 		for (int i = 0; i < m_data.size(); i++)
 		{
-			SDL_FRect a{(2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i]};
+			SDL_FRect a{ (2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i] };
 			SDL_RenderFillRectF(renderer, &a);
 		}
 
@@ -96,7 +85,7 @@ struct sortingClass
 				{
 					for (int i = copyPos[0], j = 0; j <= copyPos[1]; i++, j++)
 					{
-						SDL_FRect a{(2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i]};
+						SDL_FRect a{ (2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i] };
 						SDL_RenderDrawRectF(renderer, &a);
 					}
 				}
@@ -106,7 +95,7 @@ struct sortingClass
 				swapMutex.lock();
 				for (auto i : swapPos)
 				{
-					SDL_FRect a{(2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i]};
+					SDL_FRect a{ (2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i] };
 					SDL_RenderFillRectF(renderer, &a);
 				}
 				swapMutex.unlock();
@@ -116,7 +105,7 @@ struct sortingClass
 				// glLineWidth(5.0f);
 				for (auto i : compPos)
 				{
-					SDL_FRect a{(2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i]};
+					SDL_FRect a{ (2 * i + 1) * spacing - width / 2, viewport->h - m_data[i], width, m_data[i] };
 					SDL_RenderFillRectF(renderer, &a);
 				}
 				compMutex.unlock();
@@ -137,7 +126,67 @@ struct sortingClass
 		//SDL_Rect rect{ width, 0, viewport.w - 2 * width, viewport.h };
 	}
 
-	inline bool cmp(const size_t &left, const size_t &right)
+	void imguiDraw(appState& state, int& combo_selected, Window* window) {
+		ImGui::SameLine();
+		ImGui::PushItemWidth((float)window->wwidth / 13);
+		ImGui::SameLine();
+		ImGui::Text("Number of datas");
+		ImGui::SameLine();
+		ImGui::InputInt(" | ##no", &N);
+		if (N < 3)
+			N = 3;
+		ImGui::PopItemWidth();
+
+		ImGui::PushItemWidth((float)window->wwidth / 5);
+		ImGui::SameLine();
+		ImGui::Text("bar Width");
+		ImGui::SameLine();
+		ImGui::SliderInt(" | ##bw", &width, 1, window->viewport.w / (N - 1));
+		ImGui::SameLine();
+		ImGui::PopItemWidth();
+
+		if (ImGui::Button("Reload"))
+		{
+			randomize(window->viewport);
+			//sort.width = m_window->wwidth / sort.N * 0.95;
+		}
+		ImGui::SameLine();
+
+		if (ImGui::Button("GO"))
+		{
+			switch (combo_selected)
+			{
+			case 0:
+				thread = new std::thread(&sortingClass::selectionsort, this);
+				break;
+			case 1:
+				thread = new std::thread(&sortingClass::quicksort, this);
+				break;
+			case 2:
+				thread = new std::thread(&sortingClass::mergesort, this);
+				break;
+			case 3:
+				thread = new std::thread(&sortingClass::insertionsort, this);
+				break;
+			case 4:
+				thread = new std::thread(&sortingClass::bubblesort, this);
+				break;
+			case 5:
+				thread = new std::thread(&sortingClass::shellsort, this);
+				// shellsort();
+				break;
+			case 6:
+				thread = new std::thread(&sortingClass::shellsort2, this);
+				// shellsort();
+				break;
+			default:
+				break;
+			}
+			state = appState::Animating;
+		}
+	}
+
+	inline bool cmp(const size_t& left, const size_t& right)
 	{
 		compPos.emplace_back(left);
 		compPos.emplace_back(right);
@@ -150,7 +199,7 @@ struct sortingClass
 		return m_data[left] > m_data[right];
 	}
 
-	inline bool cmp(const size_t &left, const uint32_t &ld, const size_t &right, const uint32_t &rd)
+	inline bool cmp(const size_t& left, const uint32_t& ld, const size_t& right, const uint32_t& rd)
 	{
 		compPos.emplace_back(left);
 		compPos.emplace_back(right);
@@ -163,7 +212,7 @@ struct sortingClass
 		return ld > rd;
 	}
 
-	void swap(const size_t &left, const size_t &right)
+	void swap(const size_t& left, const size_t& right)
 	{
 		swapPos.emplace_back(left);
 		swapPos.emplace_back(right);
@@ -181,16 +230,16 @@ struct sortingClass
 		swapMutex.unlock();
 	}
 
-	void swap2(const size_t &left, const size_t &right)
+	void swap2(const size_t& left, const size_t& right)
 	{
 		uint32_t temp = m_data[left];
 		m_data[left] = m_data[right];
 		m_data[right] = temp;
 	}
 
-	inline void memcopy(const uint32_t &to, const uint32_t &from, const uint32_t &number)
+	inline void memcopy(const uint32_t& to, const uint32_t& from, const uint32_t& number)
 	{
-		auto *arr = &m_data[0];
+		auto* arr = &m_data[0];
 		copyPos.emplace_back(from);
 		copyPos.emplace_back(number);
 		int a = sleeptime * 1000 * 3;
@@ -206,43 +255,11 @@ struct sortingClass
 		copyMutex.unlock();
 	}
 
-	void run(int selection)
-	{
 
-		switch (selection)
-		{
-		case 0:
-			thread = new std::thread(&sortingClass::selectionsort, this);
-			break;
-		case 1:
-			thread = new std::thread(&sortingClass::quicksort, this);
-			break;
-		case 2:
-			thread = new std::thread(&sortingClass::mergesort, this);
-			break;
-		case 3:
-			thread = new std::thread(&sortingClass::insertionsort, this);
-			break;
-		case 4:
-			thread = new std::thread(&sortingClass::bubblesort, this);
-			break;
-		case 5:
-			thread = new std::thread(&sortingClass::shellsort, this);
-			// shellsort();
-			break;
-		case 6:
-			thread = new std::thread(&sortingClass::shellsort2, this);
-			// shellsort();
-			break;
-		default:
-			break;
-		}
-	}
-
-	void merge(uint32_t *arr, const size_t &a, const size_t &m, const size_t &b);
-	void mergesortSubroutine(const size_t &a, const size_t &b);
+	void merge(uint32_t* arr, const size_t& a, const size_t& m, const size_t& b);
+	void mergesortSubroutine(const size_t& a, const size_t& b);
 	void mergesort();
-	void qsort(const size_t &start_index, const size_t &end_index);
+	void qsort(const size_t& start_index, const size_t& end_index);
 	void quicksort();
 	void bubblesort();
 	void radixsort();

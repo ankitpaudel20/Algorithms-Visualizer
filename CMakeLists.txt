@@ -1,20 +1,25 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(Application LANGUAGES CXX)
+project(Application LANGUAGES C CXX)
 
 add_executable(Application main.cpp)
 target_include_directories(Application PRIVATE include vendor/imgui vendor/include)
-target_sources(Application PRIVATE 
+
+      file(GLOB_RECURSE SDL2_GFX_SOURCES vendor/include/SDL2/*.c)
+
+
+      target_sources(Application PRIVATE 
         vendor/imgui/imgui.cpp
         vendor/imgui/imgui_widgets.cpp
         vendor/imgui/imgui_demo.cpp
         vendor/imgui/imgui_draw.cpp
         vendor/imgui/imgui_impl_sdl.cpp
         vendor/imgui/imgui_impl_opengl3.cpp
-        vendor/glad/glad.cpp
-        sorts.cpp)
+        vendor/glad/glad.c
+        sorts.cpp
+        ${SDL2_GFX_SOURCES})
 
-      
+
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_link_directories(Application PRIVATE vendor/libs)
