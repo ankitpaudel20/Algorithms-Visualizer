@@ -111,3 +111,25 @@ struct fontinfo {
 		return std::string(name + (char)size) < std::string(rhs.name + (char)rhs.size);
 	}
 };
+
+
+struct body
+{
+	vec2<int> size;
+	vec2<float> pos, vel, targetVel;
+
+	SDL_FRect getrect()
+	{
+		return SDL_FRect{ pos.x - (float)size.x, pos.y - (float)size.y, (float)size.x, (float)size.y };
+	}
+
+	void update(float deltatime)
+	{
+		vel.x = vel.x + (targetVel.x - vel.x) * deltatime;
+		vel.y = vel.y + (targetVel.y - vel.y) * deltatime;
+		// calculate final position
+
+		pos.x += vel.x;
+		pos.y += vel.y;
+	}
+};

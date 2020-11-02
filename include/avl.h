@@ -2,24 +2,25 @@
 
 #include <iostream>
 #include <cstring>
+#include <string>
 #include <vector>
 #include <cassert>
 #include <algorithm>
 #include "common.h"
 #include "SDL2/SDL.h"
-#include"SDL2/SDL2_gfxPrimitives.h"
+#include "SDL2/SDL2_gfxPrimitives.h"
 
 // insert
 // find
 // height
 
+class app;
 namespace treeAdd
 {
 	unsigned indent_counter;
 }
 
-
-template<class T>
+template <class T>
 struct node
 {
 	struct rotation
@@ -147,12 +148,14 @@ struct node
 			}
 			node2->parent = strayParentNode1;
 
-
 			node1->refreshHeight();
 			node2->refreshHeight();
 			return node2;
 		};
 	};
+
+	body circle;
+	SDL_Texture* letters;
 
 	T* m_data = nullptr;
 	unsigned int leftHeight = 0;
@@ -172,38 +175,44 @@ struct node
 	}
 	  }*/
 
-	static void refresh(node<T>* parent, node<T>* childIdentification, uint32_t& maxdepth)
+	static void refresh(node<T>* Node, uint32_t& maxdepth)
 	{
-		if (parent == nullptr)
+		if (!Node)
 			return;
 
-		if (childIdentification == parent->rightChild)
-			parent->rightHeight = childIdentification->getHeight() + 1;
-		else if (childIdentification == parent->leftChild)
-			parent->leftHeight = childIdentification->getHeight() + 1;
-		else
+		if (Node->rightChild)
 		{
-			std::cout << "valid child not given" << std::endl;
-			assert(false);
+			Node->rightHeight = Node->rightChild->getHeight() + 1;
+			Node->depth = Node->rightChild->depth - 1;
 		}
-		parent->depth = childIdentification->depth - 1;
-
-		auto newCurrentNode = parent->balance();
-
-		if (newCurrentNode != parent)
+		if (Node->leftChild)
 		{
+			Node->leftHeight = Node->leftChild->getHeight() + 1;
+			Node->depth = Node->leftChild->depth - 1;
+		}
+		auto newCurrentNode = Node->balance();
+
+		if (newCurrentNode != Node)
 			maxdepth = newCurrentNode->refreshDepth();
-			/*if (newCurrentNode->parent == nullptr)
-			{
 
-			}*/
-			//newCurrentNode->refreshpos(maxdepth);
+
+
+		if (Node->rightChild)
+		{
+			Node->rightChild->circle.pos.x = Node->circle.pos.x + (uint16_t)((maxdepth - Node->rightChild->depth + 1) * (dist.x / 2));;
 		}
+		if (Node->leftChild)
+		{
+			Node->leftChild->circle.pos.x = Node->circle.pos.x - (uint16_t)((maxdepth - Node->leftChild->depth + 1) * (dist.x / 2));;
+		}
+		Node->rightChild->circle.pos.y = Node->circle.pos.y + dist.y;
+
+
 
 		if (newCurrentNode == nullptr)
 			return;
 
-		refresh(newCurrentNode->parent, newCurrentNode, maxdepth);
+		refresh(newCurrentNode->parent, maxdepth);
 	}
 
 	static void swap(node<T>* node1, node<T>* node2)
@@ -264,25 +273,24 @@ struct node
 		}
 	}
 
-
 	node<T>* balance()
 	{
 		int diff = leftHeight - rightHeight;
 		if (diff >= 2)
 		{
 			int diff2 = leftChild->leftHeight - leftChild->rightHeight;
-			if (diff2 > 0)
-				return rotation::ll(this);
-			else if (diff < 0)
+			if (diff2 < 0)
 				return rotation::lr(this);
+			else
+				return rotation::ll(this);
 		}
 		else if (diff <= -2)
 		{
 			int diff2 = rightChild->leftHeight - rightChild->rightHeight;
-			if (diff2 > 0)
-				return rotation::rl(this);
-			else if (diff < 0)
+			if (diff2 < 0)
 				return rotation::rr(this);
+			else
+				return rotation::rl(this);
 		}
 		return this;
 	}
@@ -311,7 +319,6 @@ struct node
 		return max < temp ? temp : max;
 	}
 
-
 	unsigned getHeight()
 	{
 		return std::max(rightHeight, leftHeight);
@@ -335,7 +342,7 @@ struct node
 			memcpy(m_data, &data, sizeof(T));
 			depth = _depth;
 			maxdepth = depth;
-			refresh(this->parent, this, maxdepth);
+			refresh(this, maxdepth);
 			return;
 		}
 
@@ -346,7 +353,7 @@ struct node
 			else
 			{
 				rightChild = new node<T>(data, this, _depth + 1, maxdepth);
-				refresh(this, this->rightChild, maxdepth);
+				refresh(this->rightChild, maxdepth);
 			}
 		}
 		else
@@ -356,8 +363,8 @@ struct node
 			else
 			{
 				leftChild = new node<T>(data, this, _depth + 1, maxdepth);
-				maxdepth = _depth + 1;
-				refresh(this, this->leftChild, maxdepth);
+				//maxdepth = _depth + 1;
+				refresh(this->leftChild, maxdepth);
 			}
 		}
 	}
@@ -460,59 +467,102 @@ struct node
 
 	bool operator==(const node& rhs) const { return m_data == rhs.m_data; }
 
+	friend std::ostream& operator<<(std::ostream& out, const node<T>& n)
+	{
+		if (n.leftChild == nullptr)
+			out << *n.m_data << "("
+			<< "NaN";
+		else
+			out << *n.m_data << "(" << *n.leftChild;
 
-	void drawCircle(SDL_Renderer* renderer, vec2<uint32_t> parpos, const float& radius, const vec2<float>& dist, const uint32_t& maxdepth) {
-		parpos.y = parpos.y + dist.y;
+		out << " , ";
 
-		if (parent->leftChild == this) {
-			parpos.x = parpos.x - (uint16_t)((maxdepth - depth + 1) * (dist.x / 2));
-			filledCircleColor(renderer, parpos.x, parpos.y, radius, 0xFFFFFFFF);
-		}
-		else {
-			parpos.x = parpos.x + (uint16_t)((maxdepth - depth + 1) * (dist.x / 2));
-			filledCircleColor(renderer, parpos.x, parpos.y, radius, 0xFFFFFFFF);
-		}
+		if (n.rightChild == nullptr)
+			out << "NaN"
+			<< ")";
+		else
+			out << *n.rightChild << ")";
 
-		if (leftChild)
-			leftChild->drawCircle(renderer, parpos, radius, dist, maxdepth);
-		if (rightChild)
-			rightChild->drawCircle(renderer, parpos, radius, dist, maxdepth);
+		/* out << n.m_data << "(" <<
+			 ((n.leftChild == nullptr) ? "NaN" : *n.leftChild) <<
+			 " , " <<
+			 ((n.rightChild == nullptr) ? "NaN" : *n.rightChild) <<
+			 ")";*/
+		return out;
 	}
 
-	void drawLines(SDL_Renderer* renderer, vec2<uint32_t> parpos, const float& radius, const vec2<float>& dist, const uint32_t& maxdepth) {
+	void drawCircle(SDL_Renderer* renderer, vec2<uint32_t> parpos, const float& radius, const vec2<float>& dist, const uint32_t& maxdepth, SDL_Texture* (*getText)(std::string, const std::string&, const int&, const uint32_t&, SDL_Renderer*))
+	{
+		parpos.y = parpos.y + dist.y;
+		SDL_Texture* text = getText(std::to_string(*m_data), "segoeui", 15, 0, renderer);
+		SDL_Rect rect;
+		SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
 
-		if (parent->leftChild == this) {
+		if (parent->leftChild == this)
+			parpos.x = parpos.x - (uint16_t)((maxdepth - depth + 1) * (dist.x / 2));
+		else
+			parpos.x = parpos.x + (uint16_t)((maxdepth - depth + 1) * (dist.x / 2));
+
+		rect.x = parpos.x - rect.w / 2;
+		rect.y = parpos.y - rect.h / 2;
+		filledCircleColor(renderer, parpos.x, parpos.y, radius, 0xFFFFFFFF);
+		SDL_RenderCopy(renderer, text, nullptr, &rect);
+
+		text = getText(std::to_string(depth), "segoeui", 10, 0, renderer);
+		SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
+		rect.x = parpos.x - rect.w / 2;
+		rect.y = parpos.y + radius - rect.h / 4;
+		SDL_RenderCopy(renderer, text, nullptr, &rect);
+
+		text = getText(std::to_string(leftHeight), "segoeui", 10, 0, renderer);
+		SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
+		rect.x = parpos.x - rect.w / 4 - radius;
+		rect.y = parpos.y - rect.h / 4 - radius;
+		SDL_RenderCopy(renderer, text, nullptr, &rect);
+
+		text = getText(std::to_string(rightHeight), "segoeui", 10, 0, renderer);
+		SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
+		rect.x = rect.x + 2 * radius - rect.w / 4;
+		SDL_RenderCopy(renderer, text, nullptr, &rect);
+
+		if (leftChild)
+			leftChild->drawCircle(renderer, parpos, radius, dist, maxdepth, getText);
+		if (rightChild)
+			rightChild->drawCircle(renderer, parpos, radius, dist, maxdepth, getText);
+	}
+
+	void drawLines(SDL_Renderer* renderer, vec2<uint32_t> parpos, const float& radius, const vec2<float>& dist, const uint32_t& maxdepth, SDL_Texture* (*getText)(std::string, const std::string&, const int&, const uint32_t&, SDL_Renderer*))
+	{
+
+		if (parent->leftChild == this)
+		{
 			SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 			SDL_RenderDrawLine(renderer, parpos.x, parpos.y, parpos.x - (maxdepth - depth + 1) * dist.x / 2, parpos.y + dist.y);
 			parpos.x = parpos.x - (uint16_t)((maxdepth - depth + 1) * (dist.x / 2));
 		}
-		else {
+		else
+		{
 			SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 			SDL_RenderDrawLine(renderer, parpos.x, parpos.y, parpos.x + (maxdepth - depth + 1) * dist.x / 2, parpos.y + dist.y);
 			parpos.x = parpos.x + (uint16_t)((maxdepth - depth + 1) * (dist.x / 2));
 		}
 		parpos.y = parpos.y + dist.y;
 
-
 		if (leftChild)
-			leftChild->drawLines(renderer, parpos, radius, dist, maxdepth);
+			leftChild->drawLines(renderer, parpos, radius, dist, maxdepth, getText);
 		if (rightChild)
-			rightChild->drawLines(renderer, parpos, radius, dist, maxdepth);
+			rightChild->drawLines(renderer, parpos, radius, dist, maxdepth, getText);
 	}
-
 };
-
 
 template <class T>
 class avlTree
 {
 
-
 private:
 	node<T>* root = nullptr;
 	unsigned no_of_data = 0;
 	uint32_t maxDepth;
-
 
 	void refreshroot()
 	{
@@ -521,24 +571,42 @@ private:
 	}
 
 public:
+	void draw(SDL_Renderer* renderer, const SDL_Rect& viewport, const uint16_t& radius, const vec2<float>& dist, SDL_Texture* (*getText)(std::string, const std::string&, const int&, const uint32_t&, SDL_Renderer*))
+	{
 
-
-	void draw(SDL_Renderer* renderer, const SDL_Rect& viewport, const uint16_t& radius, const vec2<float>& dist) {
-
+		if (!root)
+			return;
 
 		if (root->leftChild)
-			root->leftChild->drawLines(renderer, vec2<uint32_t>(viewport.w / 2, radius * 2), radius, dist, maxDepth);
+			root->leftChild->drawLines(renderer, vec2<uint32_t>(viewport.w / 2, 100), radius, dist, maxDepth, getText);
 		if (root->rightChild)
-			root->rightChild->drawLines(renderer, vec2<uint32_t>(viewport.w / 2, radius * 2), radius, dist, maxDepth);
+			root->rightChild->drawLines(renderer, vec2<uint32_t>(viewport.w / 2, 100), radius, dist, maxDepth, getText);
 
+		filledCircleColor(renderer, viewport.w / 2, 100, radius, 0xFFFFFFFF);
 
-		filledCircleColor(renderer, viewport.w / 2, radius * 2, radius, 0xFFFFFFFF);
+		SDL_Texture* text = getText(std::to_string(*root->m_data), "segoeui", 15, 0, renderer);
+		SDL_Rect rect;
+		SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
+		rect.x = viewport.w / 2 - rect.w / 2;
+		rect.y = 100 - rect.h / 2;
+		SDL_RenderCopy(renderer, text, nullptr, &rect);
+
+		text = getText(std::to_string(root->leftHeight), "segoeui", 10, 0, renderer);
+		SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
+		rect.x = viewport.w / 2 - rect.w / 4 - radius;
+		rect.y = 100 - rect.h / 4 - radius;
+		SDL_RenderCopy(renderer, text, nullptr, &rect);
+
+		text = getText(std::to_string(root->rightHeight), "segoeui", 10, 0, renderer);
+		SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
+		rect.x = rect.x + 2 * radius - rect.w / 4;
+		SDL_RenderCopy(renderer, text, nullptr, &rect);
 
 		vec2<uint32_t> pos(viewport.w, 0);
 		if (root->leftChild)
-			root->leftChild->drawCircle(renderer, vec2<uint32_t>(viewport.w / 2, radius * 2), radius, dist, maxDepth);
+			root->leftChild->drawCircle(renderer, vec2<uint32_t>(viewport.w / 2, 100), radius, dist, maxDepth, getText);
 		if (root->rightChild)
-			root->rightChild->drawCircle(renderer, vec2<uint32_t>(viewport.w / 2, radius * 2), radius, dist, maxDepth);
+			root->rightChild->drawCircle(renderer, vec2<uint32_t>(viewport.w / 2, 100), radius, dist, maxDepth, getText);
 	}
 
 	uint32_t size() { return no_of_data; }
@@ -550,7 +618,6 @@ public:
 	}
 
 	avlTree() = default;
-
 
 	explicit avlTree(const T& data) : no_of_data(1)
 	{
@@ -643,7 +710,7 @@ public:
 		return nullptr;
 	}*/
 
-	void remove(const T& data)
+	void del(const T& data)
 	{
 		if (root == nullptr)
 			return;
@@ -656,48 +723,89 @@ public:
 		}
 		no_of_data--;
 
+		if (toremove->getHeight() == 0)
+		{
+			if (toremove->parent)
+			{
+				if (toremove->parent->leftChild == toremove)
+				{
+					toremove->parent->leftChild = nullptr;
+					toremove->parent->leftHeight--;
+				}
+				else
+				{
+					toremove->parent->rightChild = nullptr;
+					toremove->parent->rightHeight--;
+				}
+				node<T>::refresh(toremove->parent, maxDepth);
+				refreshroot();
+			}
+			else
+			{
+				root = nullptr;
+			}
+
+			toremove->parent = nullptr;
+
+			delete toremove->m_data;
+			return;
+		}
+
 		if (!toremove->leftChild)
 		{
-			toremove->rightChild->parent = toremove->parent;
-			toremove->parent->rightChild = toremove->rightChild;
-			node<T>::refresh(toremove->parent, toremove->rightChild);
-			refreshroot();
-			toremove->parent = nullptr;
-			toremove->rightChild = nullptr;
-			delete toremove->m_data;
-			toremove->m_data = nullptr;
 
+			if (toremove->parent)
+			{
+				if (toremove->parent->rightChild == toremove)
+					toremove->parent->rightChild = toremove->rightChild;
+				else
+					toremove->parent->leftChild = toremove->rightChild;
+
+				toremove->rightChild->parent = toremove->parent;
+				toremove->rightChild->refreshDepth();
+			}
+			else
+			{
+				toremove->rightChild->parent = nullptr;
+				root = toremove->rightChild;
+			}
+
+			node<T>::refresh(toremove->rightChild, maxDepth);
+			toremove->rightChild = nullptr;
+			toremove->parent = nullptr;
+			refreshroot();
+
+			delete toremove->m_data;
 			return;
 		}
+
 		node<T>* smaller = toremove->leftChild->greatest();
 
-		//if smaller is leaf
-		if (smaller->getHeight() == 0)
+		*toremove->m_data = *smaller->m_data;
+
+		if (smaller->parent->leftChild == smaller)
 		{
-			smaller->parent->rightChild = nullptr;
-			smaller->parent = toremove->parent;
-
-			smaller->rightChild = toremove->rightChild;
-			if (!toremove->rightChild)
-				smaller->rightChild->parent = smaller;
-
-			smaller->leftChild = toremove->leftChild;
-			if (!toremove->leftChild)
-				smaller->leftChild->parent = smaller;
-			refreshroot();
-			return;
+			smaller->parent->leftChild = smaller->leftChild; //smaller doesnot have a right child
+			smaller->parent->leftHeight--;
 		}
 
-		//smaller never has rightnode
+		else
+		{
+			smaller->parent->rightChild = smaller->leftChild; //smaller doesnot have a left child
+			smaller->parent->rightHeight--;
+		}
 
-		smaller->parent->leftChild = nullptr;
-		smaller->parent = toremove->parent;
+		if (smaller->leftChild)
+		{
+			smaller->leftChild->parent = smaller->parent;
+			smaller->leftChild->refreshDepth();
+			smaller->leftChild = nullptr;
+		}
+		node<T>::refresh(smaller->parent, maxDepth);
 
-		smaller->rightChild = toremove->rightChild;
-		if (!toremove->rightChild)
-			smaller->rightChild->parent = smaller;
-
+		smaller->parent = nullptr;
 		refreshroot();
+		delete smaller->m_data;
 	}
 
 	std::vector<T> getSortedArray()
@@ -723,4 +831,3 @@ public:
 		return root->test;
 	}*/
 };
-

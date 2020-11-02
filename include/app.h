@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <list>	
+#include <list>
 #include "states.h"
 #include "window.h"
 #include "sort.h"
@@ -17,9 +17,6 @@
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
-
-
-
 class app
 {
 public:
@@ -28,8 +25,6 @@ public:
 		m_window = new Window(1180, 600);
 		sort.viewport = &m_window->viewport;
 		tree.viewport = &m_window->viewport;
-		tree.text_cache = &text_cache;
-		tree.font_cache = &font_cache;
 		sort.width = m_window->viewport.w / sort.N * 0.95;
 		sort.randomize(m_window->viewport);
 
@@ -43,8 +38,9 @@ public:
 			std::cout << "Failed to initialize GLAD" << std::endl;
 			return;
 		}
-
-		loadfont({ "8bit", 80 }, "../../../assets/8bitwondor.ttf");
+		std::string path(SDL_GetBasePath());
+		//printf("%s\n", path.append(+"../../../assets/segoeuib.ttf").c_str());
+		loadfont({ "segoeui", 5 }, path.append(+"../../../assets/segoeuib.ttf").c_str());
 
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -72,7 +68,6 @@ public:
 				SDL_DestroyTexture(text.second);
 			}
 		}
-
 
 		for (auto font : font_cache)
 		{
@@ -142,10 +137,10 @@ public:
 			}
 			else
 			{
-				tree.draw(m_state, m_window->gRenderer);
+				tree.draw(m_state, m_window->gRenderer, getText);
 			}
-			SDL_Texture* text = getText("hello world", "8bit", 80);
-			SDL_Texture* text1 = getText("hello world small", "8bit", 20);
+			/*SDL_Texture* text = getText("hello world", "8bit", 80, 300, m_window->gRenderer);
+			SDL_Texture* text1 = getText("hello world small", "8bit", 15, 150, m_window->gRenderer);
 			SDL_Rect rect{ 200, 100, 200, 500 };
 
 			SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
@@ -153,7 +148,7 @@ public:
 
 			rect.x = 500;
 			SDL_QueryTexture(text1, nullptr, nullptr, &rect.w, &rect.h);
-			SDL_RenderCopy(m_window->gRenderer, text1, nullptr, &rect);
+			SDL_RenderCopy(m_window->gRenderer, text1, nullptr, &rect);*/
 
 			//IMGUI rendering
 			{
@@ -254,18 +249,22 @@ public:
 		}
 	}
 
-private:
-	SDL_Texture* createTextTexture(const std::string& fontname, std::string text, const int& size)
+public:
+	static SDL_Texture* createTextTexture(const std::string& fontname, std::string text, const int& size, const uint32_t& wrap, SDL_Renderer* renderer)
 	{
 		//SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), { 0, 0, 0 });
-		SDL_Surface* surface = TTF_RenderText_Blended_Wrapped(getfont(fontname, size), text.c_str(), { 0, 0, 0 }, 100);
+		SDL_Surface* surface;
+		if (wrap)
+			surface = TTF_RenderText_Blended_Wrapped(getfont(fontname, size), text.c_str(), { 0, 0, 0 }, wrap);
+		else
+			surface = TTF_RenderText_Blended(getfont(fontname, size), text.c_str(), { 0, 0, 0 });
 
 		if (surface == nullptr)
 		{
 			printf("text render error : %s\n", TTF_GetError());
 			return nullptr;
 		}
-		SDL_Texture* tex = SDL_CreateTextureFromSurface(m_window->gRenderer, surface);
+		SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surface);
 
 		if (tex == nullptr)
 		{
@@ -276,7 +275,7 @@ private:
 		return tex;
 	}
 
-	void loadfont(const fontinfo& info, const std::string& path)
+	static void loadfont(const fontinfo& info, const std::string& path)
 	{
 		if (font_cache[info] == nullptr)
 		{
@@ -293,10 +292,12 @@ private:
 			font_path[info.name] = path;
 	}
 
-	TTF_Font* getfont(const std::string& name, const int& size) {
-		fontinfo key{ name,size };
+	static TTF_Font* getfont(const std::string& name, const int& size)
+	{
+		fontinfo key{ name, size };
 
-		if (font_cache[key] != nullptr) {
+		if (font_cache[key] != nullptr)
+		{
 			return font_cache[key];
 		}
 		if (font_path.find(name) == font_path.end())
@@ -308,20 +309,18 @@ private:
 		return font_cache[key];
 	}
 
-	SDL_Texture* getText(std::string text, const std::string& fontname, const int& size)
+	static SDL_Texture* getText(std::string text, const std::string& fontname, const int& size, const uint32_t& wrap, SDL_Renderer* renderer)
 	{
-		std::string key = text + fontname + (char)size;
+		std::string key = text + fontname + (char)size + (char)wrap;
 		if (text_cache[key] == nullptr)
-			text_cache[key] = createTextTexture(fontname, text, size);
+			text_cache[key] = createTextTexture(fontname, text, size, wrap, renderer);
 
 		return text_cache[key];
 	}
 
-	std::map<std::string, SDL_Texture*> text_cache;
-	std::map<fontinfo, TTF_Font*> font_cache;
-	std::map<std::string, std::string> font_path;
-
-
+	static std::map<std::string, SDL_Texture*> text_cache;
+	static std::map<fontinfo, TTF_Font*> font_cache;
+	static std::map<std::string, std::string> font_path;
 
 	appState m_state;
 	Window* m_window;
@@ -346,4 +345,7 @@ private:
 	int combo_selected = 7;
 };
 
+std::map<std::string, SDL_Texture*> app::text_cache;
+std::map<fontinfo, TTF_Font*> app::font_cache;
+std::map<std::string, std::string> app::font_path;
 #endif // APP_H
