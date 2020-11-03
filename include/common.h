@@ -113,23 +113,34 @@ struct fontinfo {
 };
 
 
-struct body
+struct Circle
 {
-	vec2<int> size;
-	vec2<float> pos, vel, targetVel;
+	vec2<float> pos, vel = 0, targetVel = 0;
+	SDL_Rect texPos;
+	uint32_t color;
+	SDL_Texture* letter = nullptr;
 
-	SDL_FRect getrect()
+	void update(const float& deltatime)
 	{
-		return SDL_FRect{ pos.x - (float)size.x, pos.y - (float)size.y, (float)size.x, (float)size.y };
+		/*	vel.x = vel.x + (targetVel.x - vel.x) * deltatime;
+			vel.y = vel.y + (targetVel.y - vel.y) * deltatime;*/
+			// calculate final position
+
+		pos.x += vel.x * deltatime;
+		pos.y += vel.y * deltatime;
+		texPos.x += vel.x;
+		texPos.y += vel.y;
 	}
 
-	void update(float deltatime)
-	{
-		vel.x = vel.x + (targetVel.x - vel.x) * deltatime;
-		vel.y = vel.y + (targetVel.y - vel.y) * deltatime;
-		// calculate final position
-
-		pos.x += vel.x;
-		pos.y += vel.y;
+	void calculateTexPos(SDL_Texture* tex) {
+		letter = tex;
+		SDL_QueryTexture(tex, nullptr, nullptr, &texPos.w, &texPos.h);
+		texPos.x = pos.x - texPos.w / 2;
+		texPos.y = pos.y - texPos.h / 2;
 	}
+
+};
+
+enum class appState {
+	Idle, Animating
 };

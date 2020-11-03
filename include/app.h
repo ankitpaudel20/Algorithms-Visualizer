@@ -4,10 +4,10 @@
 #include <vector>
 #include <map>
 #include <list>
-#include "states.h"
 #include "window.h"
 #include "sort.h"
-#include "treeClass.h"
+#include "avl.h"
+#include "common.h"
 
 #include "glad/glad.h"
 #include "SDL2/SDL_ttf.h"
@@ -20,11 +20,12 @@
 class app
 {
 public:
-	app()
+	app() :tree(getText)
 	{
 		m_window = new Window(1180, 600);
 		sort.viewport = &m_window->viewport;
 		tree.viewport = &m_window->viewport;
+
 		sort.width = m_window->viewport.w / sort.N * 0.95;
 		sort.randomize(m_window->viewport);
 
@@ -53,6 +54,12 @@ public:
 		ImGui_ImplOpenGL3_Init("#version 130");
 
 		m_state = appState::Idle;
+
+
+
+		std::vector<int> datas{ 10, 50, -10, 60, 125, 40, 54, -6, 0, 25 ,135,45 };
+		//std::vector<int> datas{ 10, 50, -10, 60,125,40 };
+		tree.insertarray(&datas[0], datas.size(), m_window->gRenderer);
 	}
 
 	~app()
@@ -85,11 +92,13 @@ public:
 	{
 		SDL_ShowWindow(m_window->gWindow);
 
+		tree.shared.deltatime = &deltaTime;
 		bool listGrayed, stopButtonGrayed;
-		static float flow = 0.0f;
-		static float fhigh = 0.3f;
+
 		while (!closeWindow)
 		{
+			deltaTime = 1000.0f / ImGui::GetIO().Framerate;
+
 			while (SDL_PollEvent(&evnt) != 0)
 			{
 				ImGui_ImplSDL2_ProcessEvent(&evnt);
@@ -107,6 +116,7 @@ public:
 				}
 				else if (evnt.type == SDL_WINDOWEVENT)
 				{
+
 					switch (evnt.window.event)
 					{
 
@@ -117,6 +127,7 @@ public:
 						m_window->viewport.h = evnt.window.data2 - 50;
 						sort.width = evnt.window.data1 / sort.N * 0.95;
 						sort.spacing = (float)m_window->viewport.w / ((sort.N - 1) * 2);
+						tree.refreshpos();
 						break;
 					case SDL_WINDOWEVENT_MINIMIZED:
 						SDL_Log("Window %d minimized", evnt.window.windowID);
@@ -137,7 +148,7 @@ public:
 			}
 			else
 			{
-				tree.draw(m_state, m_window->gRenderer, getText);
+				tree.draw(m_state, m_window->gRenderer);
 			}
 			/*SDL_Texture* text = getText("hello world", "8bit", 80, 300, m_window->gRenderer);
 			SDL_Texture* text1 = getText("hello world small", "8bit", 15, 150, m_window->gRenderer);
@@ -225,10 +236,21 @@ public:
 							ImGui::PopStyleVar();
 						}
 					}*/
-
 					ImGui::PushItemWidth(200);
-					ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sort.sleeptime, &flow, &fhigh);
+					if (combo_selected < 7)
+					{
+						const float flow = 0.0f;
+						const float fhigh = 0.3f;
+						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sort.sleeptime, &flow, &fhigh);
+					}
+					else
+					{
+						const float flow = 0.2f;
+						const float fhigh = 5.0f;
+						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &tree.sleeptime, &flow, &fhigh);
+					}
 					ImGui::PopItemWidth();
+
 					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
 					ImGui::SetWindowSize(ImVec2(m_window->wwidth, ImGui::GetWindowSize().y));
@@ -250,6 +272,7 @@ public:
 	}
 
 public:
+
 	static SDL_Texture* createTextTexture(const std::string& fontname, std::string text, const int& size, const uint32_t& wrap, SDL_Renderer* renderer)
 	{
 		//SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), { 0, 0, 0 });
@@ -329,7 +352,9 @@ public:
 	bool closeWindow = false;
 
 	sortingClass sort;
-	treeClass tree;
+	avlTree<int> tree;
+
+	float deltaTime = 0;
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 

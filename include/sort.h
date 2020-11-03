@@ -8,9 +8,9 @@
 #include <cstring>
 
 #include "window.h"
-#include "states.h"
 #include "glad/glad.h"
 #include "imgui.h"
+#include "common.h"
 
 
 struct sortingClass
@@ -34,6 +34,14 @@ struct sortingClass
 	SDL_Rect* viewport;
 
 	std::thread* thread = nullptr;
+
+
+	/// <summary>
+	/// for working with sleeptimes sliders
+	/// </summary>
+	const float flow = 0.0f;
+	const float fhigh = 0.3f;
+
 
 	sortingClass()
 	{
@@ -184,6 +192,10 @@ struct sortingClass
 			}
 			state = appState::Animating;
 		}
+
+		ImGui::PushItemWidth(200);
+		ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sleeptime, &flow, &fhigh);
+		ImGui::PopItemWidth();
 	}
 
 	inline bool cmp(const size_t& left, const size_t& right)
