@@ -6,15 +6,15 @@ struct Window
 {
 
 	bool ready = false;
-	SDL_Window *gWindow;
-	SDL_Renderer *gRenderer;
+	SDL_Window* gWindow;
+	SDL_Renderer* gRenderer;
 	SDL_GLContext gl_context;
 	SDL_Rect viewport;
 
-	uint32_t wwidth = 1180;
-	uint32_t wheight = 600;
+	Uint32 wwidth = 1180;
+	Uint32 wheight = 600;
 
-	Window(uint32_t width, uint32_t height) : wwidth(width), wheight(height)
+	Window(Uint32 width, Uint32 height) : wwidth(width), wheight(height)
 	{
 		if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		{
@@ -31,7 +31,7 @@ struct Window
 			return;
 		}
 
-		viewport = SDL_Rect{0, 50, (int)wwidth, (int)wheight - 50};
+		viewport = SDL_Rect{ 0, 50, (int)wwidth, (int)wheight - 50 };
 
 		SDL_GL_SetSwapInterval(1); // Enable vsync
 		gl_context = SDL_GL_CreateContext(gWindow);

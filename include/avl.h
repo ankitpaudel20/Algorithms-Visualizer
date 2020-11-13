@@ -29,11 +29,11 @@ struct shared_data {
 };
 
 template <class T>
-struct node
+struct treeNode
 {
 	struct rotation
 	{
-		static node<T>* rr(node<T>* node1)
+		static treeNode<T>* rr(treeNode<T>* node1)
 		{
 			auto node2 = node1->rightChild;
 			auto strayLeftNode2 = node2->leftChild;
@@ -59,7 +59,7 @@ struct node
 			return node2;
 		};
 
-		static node<T>* lr(node<T>* node1)
+		static treeNode<T>* lr(treeNode<T>* node1)
 		{
 			auto node2 = node1->leftChild;
 			auto node3 = node1->leftChild->rightChild;
@@ -95,7 +95,7 @@ struct node
 			return node3;
 		};
 
-		static node<T>* rl(node<T>* node1)
+		static treeNode<T>* rl(treeNode<T>* node1)
 		{
 			auto node2 = node1->rightChild;
 			auto node3 = node1->rightChild->leftChild;
@@ -133,7 +133,7 @@ struct node
 			return node3;
 		};
 
-		static node<T>* ll(node<T>* node1)
+		static treeNode<T>* ll(treeNode<T>* node1)
 		{
 			auto node2 = node1->leftChild;
 			auto strayRightNode2 = node2->rightChild;
@@ -169,13 +169,13 @@ struct node
 	unsigned int rightHeight = 0;
 	unsigned depth;
 
-	node<T>* leftChild = nullptr;
-	node<T>* rightChild = nullptr;
-	node<T>* parent = nullptr;
+	treeNode<T>* leftChild = nullptr;
+	treeNode<T>* rightChild = nullptr;
+	treeNode<T>* parent = nullptr;
 
 
 
-	static void refresh(node<T>* Node, uint32_t& maxdepth, const vec2<float>& dist)
+	static void refresh(treeNode<T>* Node, uint32_t& maxdepth, const vec2<float>& dist)
 	{
 		if (!Node)
 			return;
@@ -190,7 +190,7 @@ struct node
 			Node->leftHeight = Node->leftChild->getHeight() + 1;
 			Node->depth = Node->leftChild->depth - 1;
 		}
-		node<T>* rootpos;
+		treeNode<T>* rootpos;
 		if (!Node->parent)
 		{
 			rootpos = Node;
@@ -203,7 +203,7 @@ struct node
 			if (!newCurrentNode->parent) {
 				newCurrentNode->circle.pos = rootpos->circle.pos;
 				newCurrentNode->circle.texPos = rootpos->circle.texPos;
-				newCurrentNode->circle.calculateTexPos(newCurrentNode->circle.letter);
+				newCurrentNode->circle.texInit(newCurrentNode->circle.letter);
 			}
 			newCurrentNode->refreshPos(maxdepth, dist);
 		}
@@ -258,7 +258,7 @@ struct node
 	}
 
 
-	node<T>* balance()
+	treeNode<T>* balance()
 	{
 		int diff = leftHeight - rightHeight;
 		if (diff >= 2)
@@ -291,7 +291,7 @@ struct node
 		return std::max(rightHeight, leftHeight);
 	}
 
-	node(const T& data, node<T>* parentptr, const uint32_t& _depth, uint32_t& maxdepth)
+	treeNode(const T& data, treeNode<T>* parentptr, const uint32_t& _depth, uint32_t& maxdepth)
 	{
 		parent = parentptr;
 		depth = _depth;
@@ -305,7 +305,7 @@ struct node
 		shared.nmutex.lock();
 		Circle temp;
 		temp.pos = circle.pos;
-		temp.calculateTexPos(circle.letter);
+		temp.texInit(circle.letter);
 		shared.nodes.emplace_back(temp);
 		shared.nmutex.unlock();
 
@@ -322,7 +322,7 @@ struct node
 				rightChild->addData(data, _depth + 1, maxdepth, letters, dist, shared);
 			else
 			{
-				rightChild = new node<T>(data, this, _depth + 1, maxdepth);
+				rightChild = new treeNode<T>(data, this, _depth + 1, maxdepth);
 				rightChild->circle.pos = vec2<float>(circle.pos.x + (float)(pow(2, maxdepth - depth - 1) * dist.x / 2), circle.pos.y + dist.y);
 				rightChild->circle.letter = letters;
 				SDL_QueryTexture(rightChild->circle.letter, nullptr, nullptr, &rightChild->circle.texPos.w, &rightChild->circle.texPos.h);
@@ -339,7 +339,7 @@ struct node
 			else
 			{
 
-				leftChild = new node<T>(data, this, _depth + 1, maxdepth);
+				leftChild = new treeNode<T>(data, this, _depth + 1, maxdepth);
 				leftChild->circle.pos = vec2<float>(circle.pos.x - (float)(pow(2, maxdepth - depth - 1) * dist.x / 2), circle.pos.y + dist.y);
 				leftChild->circle.letter = letters;
 				SDL_QueryTexture(leftChild->circle.letter, nullptr, nullptr, &leftChild->circle.texPos.w, &leftChild->circle.texPos.h);
@@ -359,7 +359,7 @@ struct node
 
 		shared.nmutex.lock();
 		temp.pos = circle.pos;
-		temp.calculateTexPos(circle.letter);
+		temp.texInit(circle.letter);
 		shared.nodes.emplace_back(temp);
 		shared.nmutex.unlock();
 
@@ -380,7 +380,7 @@ struct node
 				rightChild->addData2(data, _depth + 1, maxdepth, letters, dist);
 			else
 			{
-				rightChild = new node<T>(data, this, _depth + 1, maxdepth);
+				rightChild = new treeNode<T>(data, this, _depth + 1, maxdepth);
 				rightChild->circle.pos = vec2<float>(circle.pos.x + (float)(pow(2, maxdepth - depth - 1) * dist.x / 2), circle.pos.y + dist.y);
 				rightChild->circle.letter = letters;
 				SDL_QueryTexture(rightChild->circle.letter, nullptr, nullptr, &rightChild->circle.texPos.w, &rightChild->circle.texPos.h);
@@ -397,7 +397,7 @@ struct node
 			else
 			{
 
-				leftChild = new node<T>(data, this, _depth + 1, maxdepth);
+				leftChild = new treeNode<T>(data, this, _depth + 1, maxdepth);
 				leftChild->circle.pos = vec2<float>(circle.pos.x - (float)(pow(2, maxdepth - depth - 1) * dist.x / 2), circle.pos.y + dist.y);
 				leftChild->circle.letter = letters;
 				SDL_QueryTexture(leftChild->circle.letter, nullptr, nullptr, &leftChild->circle.texPos.w, &leftChild->circle.texPos.h);
@@ -410,12 +410,12 @@ struct node
 		}
 	}
 
-	node<T>* search(const T& data, shared_data& shared)
+	treeNode<T>* search(const T& data, shared_data& shared)
 	{
 		shared.nmutex.lock();
 		Circle temp;
 		temp.pos = circle.pos;
-		temp.calculateTexPos(circle.letter);
+		temp.texInit(circle.letter);
 		shared.nodes.emplace_back(temp);
 		shared.nmutex.unlock();
 
@@ -443,7 +443,7 @@ struct node
 
 		shared.nmutex.lock();
 		temp.pos = circle.pos;
-		temp.calculateTexPos(circle.letter);
+		temp.texInit(circle.letter);
 		shared.nodes.emplace_back(temp);
 		shared.nmutex.unlock();
 
@@ -455,12 +455,12 @@ struct node
 
 	}
 
-	node<T>* greatest(shared_data& shared)
+	treeNode<T>* greatest(shared_data& shared)
 	{
 		shared.nmutex.lock();
 		Circle temp;
 		temp.pos = circle.pos;
-		temp.calculateTexPos(circle.letter);
+		temp.texInit(circle.letter);
 		shared.nodes.emplace_back(temp);
 		shared.nmutex.unlock();
 
@@ -477,7 +477,7 @@ struct node
 	};
 
 
-	~node()
+	~treeNode()
 	{
 		if (rightChild != nullptr)
 			delete rightChild;
@@ -488,19 +488,19 @@ struct node
 		std::cout << "node destroyed" << std::endl;
 	}
 
-	bool operator>(const node& rhs) const { return m_data > rhs.m_data; }
+	bool operator>(const treeNode& rhs) const { return m_data > rhs.m_data; }
 
 	bool operator>(const T& rhs) const { return m_data > m_data; }
 
-	bool operator<(const node& rhs) const { return m_data < rhs.m_data; }
+	bool operator<(const treeNode& rhs) const { return m_data < rhs.m_data; }
 
-	bool operator>=(const node& rhs) const { return m_data >= rhs.m_data; }
+	bool operator>=(const treeNode& rhs) const { return m_data >= rhs.m_data; }
 
-	bool operator<=(const node& rhs) const { return m_data <= rhs.m_data; }
+	bool operator<=(const treeNode& rhs) const { return m_data <= rhs.m_data; }
 
-	bool operator==(const node& rhs) const { return m_data == rhs.m_data; }
+	bool operator==(const treeNode& rhs) const { return m_data == rhs.m_data; }
 
-	friend std::ostream& operator<<(std::ostream& out, const node<T>& n)
+	friend std::ostream& operator<<(std::ostream& out, const treeNode<T>& n)
 	{
 		if (n.leftChild == nullptr)
 			out << *n.m_data << "("
@@ -642,7 +642,7 @@ class avlTree
 {
 
 private:
-	node<T>* root = nullptr;
+	treeNode<T>* root = nullptr;
 	unsigned no_of_data = 0;
 	uint32_t maxDepth;
 
@@ -758,6 +758,7 @@ public:
 				shared.nmutex.lock();
 				for (auto i : shared.nodes)
 				{
+					i.update(*shared.deltatime);
 					filledCircleRGBA(renderer, (uint16_t)i.pos.x, (uint16_t)i.pos.y, radius, 0, 255, 0, 255);
 					SDL_RenderCopy(renderer, i.letter, nullptr, &i.texPos);
 				}
@@ -814,6 +815,18 @@ public:
 
 	void insert(const T& data, SDL_Texture* letters, shared_data& shared)
 	{
+
+		/*	shared.nmutex.lock();
+			Circle temp;
+			temp.pos = vec2<float>(100, 200);
+			temp.texInit(letters);
+			temp.targetVel = vec2<float>(50.0);
+			shared.nodes.emplace_back(temp);
+			shared.nmutex.unlock();
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(5000));*/
+
+
 		if (root != nullptr)
 		{
 			auto previousheight = root->getHeight();
@@ -826,7 +839,7 @@ public:
 		}
 		else
 		{
-			root = new node<T>(data, nullptr, 0, maxDepth);
+			root = new treeNode<T>(data, nullptr, 0, maxDepth);
 
 			root->circle.pos = vec2<float>(viewport->w / 2, 100);
 			root->circle.letter = letters;
@@ -857,7 +870,7 @@ public:
 		}
 		else
 		{
-			root = new node<T>(datas[0], nullptr, 0, maxDepth);
+			root = new treeNode<T>(datas[0], nullptr, 0, maxDepth);
 			no_of_data++;
 
 			root->circle.pos = vec2<float>(viewport->w / 2, 100);
@@ -895,7 +908,7 @@ public:
 		if (root == nullptr)
 			return;
 
-		node<T>* toremove = root->search(data, shared);
+		treeNode<T>* toremove = root->search(data, shared);
 		if (!toremove)
 		{
 			std::cout << "data not in Tree" << std::endl;
@@ -906,7 +919,7 @@ public:
 		shared.nmutex.lock();
 		Circle temp;
 		temp.pos = toremove->circle.pos;
-		temp.calculateTexPos(toremove->circle.letter);
+		temp.texInit(toremove->circle.letter);
 		shared.nodes.emplace_back(temp);
 		shared.nmutex.unlock();
 
@@ -929,7 +942,7 @@ public:
 					toremove->parent->rightChild = nullptr;
 					toremove->parent->rightHeight--;
 				}
-				node<T>::refresh(toremove->parent, maxDepth, dist);
+				treeNode<T>::refresh(toremove->parent, maxDepth, dist);
 				refreshroot();
 			}
 			else
@@ -964,7 +977,7 @@ public:
 				root = toremove->rightChild;
 			}
 
-			node<T>::refresh(toremove->rightChild, maxDepth, dist);
+			treeNode<T>::refresh(toremove->rightChild, maxDepth, dist);
 			toremove->rightChild = nullptr;
 			toremove->parent = nullptr;
 			refreshroot();
@@ -977,7 +990,7 @@ public:
 			return;
 		}
 
-		node<T>* smaller = toremove->leftChild->greatest(shared);
+		treeNode<T>* smaller = toremove->leftChild->greatest(shared);
 
 		*toremove->m_data = *smaller->m_data;
 		toremove->circle.letter = smaller->circle.letter;
@@ -1001,7 +1014,7 @@ public:
 			smaller->leftChild->refreshDepth();
 			smaller->leftChild = nullptr;
 		}
-		node<T>::refresh(smaller->parent, maxDepth, dist);
+		treeNode<T>::refresh(smaller->parent, maxDepth, dist);
 		refreshroot();
 
 		root->refreshPos(maxDepth, dist);
@@ -1017,7 +1030,7 @@ public:
 
 	std::vector<T> getSortedArray()
 	{
-		std::vector<node<T>*> currentHead;
+		std::vector<treeNode<T>*> currentHead;
 		currentHead.reserve(root->getHeight() + 1);
 		for (unsigned i = 0; i < currentHead.capacity(); i++)
 			currentHead.emplace_back(nullptr);

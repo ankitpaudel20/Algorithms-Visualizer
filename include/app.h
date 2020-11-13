@@ -7,6 +7,8 @@
 #include "window.h"
 #include "sort.h"
 #include "avl.h"
+#include "aStar.h"
+#include "bestFirst.h"
 #include "common.h"
 
 #include "glad/glad.h"
@@ -23,6 +25,8 @@ public:
 	app() :tree(getText)
 	{
 		m_window = new Window(1180, 600);
+		astar = new aStar(&m_window->viewport);
+
 		sort.viewport = &m_window->viewport;
 		tree.viewport = &m_window->viewport;
 
@@ -55,8 +59,6 @@ public:
 
 		m_state = appState::Idle;
 
-
-
 		std::vector<int> datas{ 10, 50, -10, 60, 125, 40, 54, -6, 0, 25 ,135,45 };
 		//std::vector<int> datas{ 10, 50, -10, 60,125,40 };
 		tree.insertarray(&datas[0], datas.size(), m_window->gRenderer);
@@ -86,7 +88,17 @@ public:
 
 		text_cache.clear();
 		TTF_Quit();
+		delete astar;
 	}
+
+
+	typedef enum
+	{
+		LMB_held = 0x01,
+		RMB_held = 0x02,
+		S_held = 0x04,
+		E_held = 0x08,
+	} heldButtons;
 
 	void run()
 	{
@@ -94,6 +106,10 @@ public:
 
 		tree.shared.deltatime = &deltaTime;
 		bool listGrayed, stopButtonGrayed;
+		bool LMBheld = false;
+		bool RMBheld = false;
+		int mouseX, mouseY;
+		Uint8 buttons = 0x00;
 
 		while (!closeWindow)
 		{
@@ -102,24 +118,64 @@ public:
 			while (SDL_PollEvent(&evnt) != 0)
 			{
 				ImGui_ImplSDL2_ProcessEvent(&evnt);
-				if (evnt.type == SDL_QUIT)
-					closeWindow = true;
-
-				else if (evnt.type == SDL_KEYDOWN)
+				switch (evnt.type)
 				{
+				case SDL_MOUSEBUTTONDOWN:
+					if (evnt.button.button == SDL_BUTTON_LEFT) {
+						LMBheld = true;
+						buttons |= LMB_held;
+					}
+					else {
+						RMBheld = true;
+						buttons |= RMB_held;
+					}
+					break;
+				case SDL_MOUSEBUTTONUP:
+					if (evnt.button.button == SDL_BUTTON_LEFT) {
+						LMBheld = false;
+						buttons ^= LMB_held;
+					}
+					else {
+						RMBheld = false;
+						buttons ^= RMB_held;
+					}
+					break;
+				case SDL_QUIT:
+					closeWindow = true;
+					break;
+				case SDL_KEYDOWN:
 					switch (evnt.key.keysym.sym)
 					{
 					case SDLK_ESCAPE:
 						closeWindow = true;
 						break;
+					case SDLK_s:
+						buttons |= S_held;
+						break;
+					case SDLK_e:
+						buttons |= E_held;
+						break;
+					case SDLK_SPACE:
+						SDL_GetMouseState(&mouseX, &mouseY);
+						astar->color(mouseX, mouseY, buttons);
+						break;
 					}
-				}
-				else if (evnt.type == SDL_WINDOWEVENT)
-				{
+					break;
+				case SDL_KEYUP:
+					switch (evnt.key.keysym.sym)
+					{
+					case SDLK_s:
+						buttons ^= S_held;
+						break;
+					case SDLK_e:
+						buttons ^= E_held;
+						break;
+					}
+					break;
+				case SDL_WINDOWEVENT:
 
 					switch (evnt.window.event)
 					{
-
 					case SDL_WINDOWEVENT_RESIZED:
 						m_window->wwidth = evnt.window.data1;
 						m_window->wheight = evnt.window.data2;
@@ -139,27 +195,32 @@ public:
 						SDL_Log("Window %d restored", evnt.window.windowID);
 						break;
 					}
+
+					break;
+				default:
+					break;
 				}
+
 			}
 
-			if (combo_selected < 7)
-			{
+
+			if (combo_selected < 8)
 				sort.Draw(m_state, m_window->gRenderer);
-			}
-			else
-			{
+			else if (combo_selected == 8) {
 				tree.draw(m_state, m_window->gRenderer);
 			}
-			/*SDL_Texture* text = getText("hello world", "8bit", 80, 300, m_window->gRenderer);
-			SDL_Texture* text1 = getText("hello world small", "8bit", 15, 150, m_window->gRenderer);
-			SDL_Rect rect{ 200, 100, 200, 500 };
+			else {
+				astar->Draw(m_state, m_window->gRenderer);
+				SDL_GetMouseState(&mouseX, &mouseY);
+				astar->color(mouseX, mouseY, buttons);
+			}
 
-			SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
-			SDL_RenderCopy(m_window->gRenderer, text, nullptr, &rect);
 
-			rect.x = 500;
-			SDL_QueryTexture(text1, nullptr, nullptr, &rect.w, &rect.h);
-			SDL_RenderCopy(m_window->gRenderer, text1, nullptr, &rect);*/
+
+			//rectangle rect
+
+			//rectangleColor(m_window->gRenderer, 100, 200, 300, 400, 0xFFFFFFFF);
+
 
 			//IMGUI rendering
 			{
@@ -199,13 +260,16 @@ public:
 						}
 						ImGui::PopItemWidth();
 
-						if (combo_selected < 7)
+						if (combo_selected < 8)
 						{
 							sort.imguiDraw(m_state, combo_selected, m_window);
 						}
+						else if (combo_selected == 8) {
+							tree.imguiDraw(m_state, combo_selected, m_window);
+						}
 						else
 						{
-							tree.imguiDraw(m_state, combo_selected, m_window);
+							astar->imguiDraw(m_state, combo_selected, m_window);
 						}
 
 						if (listGrayed)
@@ -214,41 +278,27 @@ public:
 							ImGui::PopStyleVar();
 						}
 					}
-					//stop button
-					/*ImGui::SameLine();
-					{
-						if (m_state == appState::Idle)
-						{
-							ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-							ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-							stopButtonGrayed = true;
-						}
-						else
-							stopButtonGrayed = false;
 
-						if (ImGui::Button("STOP!!!"))
-						{
-							m_state = appState::Idle;
-						}
-						if (stopButtonGrayed)
-						{
-							ImGui::PopItemFlag();
-							ImGui::PopStyleVar();
-						}
-					}*/
 					ImGui::PushItemWidth(200);
-					if (combo_selected < 7)
+					if (combo_selected < 8)
 					{
 						const float flow = 0.0f;
 						const float fhigh = 0.3f;
 						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sort.sleeptime, &flow, &fhigh);
 					}
-					else
+					else if (combo_selected == 8)
 					{
-						const float flow = 0.2f;
-						const float fhigh = 5.0f;
+						const float flow = 0.1f;
+						const float fhigh = 2.0f;
 						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &tree.sleeptime, &flow, &fhigh);
 					}
+					else if (combo_selected > 8)
+					{
+						const float flow = 0.0f;
+						const float fhigh = 0.5f;
+						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &astar->sleeptime, &flow, &fhigh);
+					}
+
 					ImGui::PopItemWidth();
 
 					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -273,7 +323,7 @@ public:
 
 public:
 
-	static SDL_Texture* createTextTexture(const std::string& fontname, std::string text, const int& size, const uint32_t& wrap, SDL_Renderer* renderer)
+	static SDL_Texture* createTextTexture(const std::string& fontname, std::string text, const int& size, const Uint32& wrap, SDL_Renderer* renderer)
 	{
 		//SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), { 0, 0, 0 });
 		SDL_Surface* surface;
@@ -332,7 +382,7 @@ public:
 		return font_cache[key];
 	}
 
-	static SDL_Texture* getText(std::string text, const std::string& fontname, const int& size, const uint32_t& wrap, SDL_Renderer* renderer)
+	static SDL_Texture* getText(std::string text, const std::string& fontname, const int& size, const Uint32& wrap, SDL_Renderer* renderer)
 	{
 		std::string key = text + fontname + (char)size + (char)wrap;
 		if (text_cache[key] == nullptr)
@@ -353,6 +403,8 @@ public:
 
 	sortingClass sort;
 	avlTree<int> tree;
+	aStar* astar = nullptr;
+
 
 	float deltaTime = 0;
 
@@ -366,8 +418,11 @@ public:
 		"bubble sort",
 		"shell sort",
 		"shell sort2",
-		"avl Tree" };
-	int combo_selected = 7;
+		"heap sort",
+		"avl Tree",
+		"path finding" };
+
+	int combo_selected = 9;
 };
 
 std::map<std::string, SDL_Texture*> app::text_cache;

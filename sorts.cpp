@@ -1,6 +1,8 @@
 
 #include "sort.h"
 
+#include "heap.h"
+
 void sortingClass::selectionsort()
 {
 	size_t i, j, k;
@@ -19,7 +21,7 @@ void sortingClass::selectionsort()
 	sorted = true;
 }
 
-void sortingClass::qsort(const size_t &start_index, const size_t &end_index)
+void sortingClass::qsort(const size_t& start_index, const size_t& end_index)
 {
 	if (end_index == start_index + 1)
 	{
@@ -47,7 +49,7 @@ void sortingClass::qsort(const size_t &start_index, const size_t &end_index)
 				for (right_iterator; right_iterator <= end_index; right_iterator++)
 				{
 					if (cmp(pivot, right_iterator))
-					// if (m_data[right_iterator] < m_data[pivot])
+						// if (m_data[right_iterator] < m_data[pivot])
 					{
 						swap(left_iterator, right_iterator);
 						right_iterator += (right_iterator != end_index);
@@ -100,10 +102,10 @@ void sortingClass::quicksort()
 	sorted = true;
 }
 
-void sortingClass::merge(uint32_t *arr, const size_t &a, const size_t &m, const size_t &b)
+void sortingClass::merge(uint32_t* arr, const size_t& a, const size_t& m, const size_t& b)
 {
 	auto size = sizeof(uint32_t);
-	uint32_t *tmp = new uint32_t[b - a + 1];
+	uint32_t* tmp = new uint32_t[b - a + 1];
 	size_t i = a, j = m + 1, k = 0;
 	while (i < m + 1 && j < b + 1)
 	{
@@ -134,7 +136,7 @@ void sortingClass::merge(uint32_t *arr, const size_t &a, const size_t &m, const 
 	delete[] tmp;
 }
 
-void sortingClass::mergesortSubroutine(const size_t &a, const size_t &b)
+void sortingClass::mergesortSubroutine(const size_t& a, const size_t& b)
 {
 	if (b <= a)
 		return;
@@ -229,6 +231,8 @@ void sortingClass::shellsort2()
 	sorted = true;
 }
 
+
+
 void sortingClass::shellsort()
 {
 	for (int gap = N / 2; gap > 0; gap /= 2)
@@ -241,4 +245,61 @@ void sortingClass::shellsort()
 		}
 	}
 	sorted = true;
+}
+
+
+
+
+
+
+
+
+void sortingClass::heapsort()
+{
+	heapify();
+	for (size_t i = 0; i < m_data.size(); i++)
+	{
+		swap(0, m_data.size() - (i + 1));
+		balanceBelow(m_data.size() - (i + 1), 0);
+	}
+	sorted = true;
+}
+
+void sortingClass::balanceBelow(const size_t& size, const unsigned& index)
+{
+	if (!hasleft(index, size))
+		return;
+	if (hasright(index, size))
+	{
+		const unsigned& greater = cmp(lc(index), rc(index)) ? lc(index) : rc(index);
+		if (cmp(greater, index))
+		{
+			swap(greater, index);
+			balanceBelow(size, greater);
+		}
+	}
+	else
+	{
+		if (cmp(lc(index), index))
+		{
+			swap(lc(index), index);
+			balanceBelow(size, lc(index));
+		}
+	}
+}
+
+
+void sortingClass::heapify()
+{
+	unsigned h = std::pow(2, getheight() - 1) + 1;
+	int start = pow(2, getheight() - 1) - 1;
+	auto end = pow(2, getheight()) - 2;
+	for (unsigned i = start; i <= end; i++)
+	{
+		balanceBelow(m_data.size(), i);
+	}
+	for (--start; start >= 0; --start)
+	{
+		balanceBelow(m_data.size(), start);
+	}
 }

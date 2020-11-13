@@ -2,12 +2,10 @@ cmake_minimum_required(VERSION 3.5)
 
 project(Application LANGUAGES C CXX)
 
-add_executable(Application main.cpp)
+add_executable(Application main.cpp )
 target_include_directories(Application PRIVATE include vendor/imgui vendor/include)
 
       file(GLOB_RECURSE SDL2_GFX_SOURCES vendor/include/SDL2/*.c)
-
-
 
       target_sources(Application PRIVATE 
         vendor/imgui/imgui.cpp

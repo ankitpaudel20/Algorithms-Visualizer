@@ -29,11 +29,11 @@ struct sortingClass
 	int N = 10;
 
 	std::vector<uint32_t> m_data;
-	bool sorted = false;
 
 	SDL_Rect* viewport;
 
 	std::thread* thread = nullptr;
+	bool sorted = false;
 
 
 	/// <summary>
@@ -68,6 +68,8 @@ struct sortingClass
 
 		if (width > viewport.w / N * 0.95)
 			width = viewport.w / N * 0.95;
+		//m_data = { 495, 275, 330, 385, 550, 110, 440, 165, 220, 55 };
+
 	}
 
 	void Draw(appState& state, SDL_Renderer* renderer)
@@ -187,15 +189,19 @@ struct sortingClass
 				thread = new std::thread(&sortingClass::shellsort2, this);
 				// shellsort();
 				break;
+			case 7:
+				thread = new std::thread(&sortingClass::heapsort, this);
+				//heapsort();
+				break;
 			default:
 				break;
 			}
 			state = appState::Animating;
 		}
 
-		ImGui::PushItemWidth(200);
-		ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sleeptime, &flow, &fhigh);
-		ImGui::PopItemWidth();
+		/*	ImGui::PushItemWidth(200);
+			ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sleeptime, &flow, &fhigh);
+			ImGui::PopItemWidth();*/
 	}
 
 	inline bool cmp(const size_t& left, const size_t& right)
@@ -210,6 +216,13 @@ struct sortingClass
 		compMutex.unlock();
 		return m_data[left] > m_data[right];
 	}
+
+
+	inline bool cmp2(const size_t& left, const size_t& right)
+	{
+		return m_data[left] > m_data[right];
+	}
+
 
 	inline bool cmp(const size_t& left, const uint32_t& ld, const size_t& right, const uint32_t& rd)
 	{
@@ -279,4 +292,15 @@ struct sortingClass
 	void selectionsort();
 	void shellsort();
 	void shellsort2();
+
+
+	void heapsort();
+	unsigned getheight() { return std::floor(std::log2(m_data.size())); }
+	void balanceBelow(const size_t& size, const unsigned& index);
+	void heapify();
+	inline unsigned rc(unsigned i) { return 2 * i + 2; }
+	inline unsigned lc(unsigned i) { return 2 * i + 1; }
+	inline bool hasright(unsigned index, const size_t& size) { return 2 * (int)index + 1 < (int)size - 1; }
+	inline bool hasleft(unsigned index, const size_t& size) { return  2 * (int)index < (int)size - 1; }
+
 };
