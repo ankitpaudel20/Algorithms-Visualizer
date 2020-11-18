@@ -8,7 +8,6 @@
 #include "sort.h"
 #include "avl.h"
 #include "aStar.h"
-#include "bestFirst.h"
 #include "common.h"
 
 #include "glad/glad.h"
@@ -24,8 +23,8 @@ class app
 public:
 	app() :tree(getText)
 	{
-		m_window = new Window(1180, 600);
-		astar = new aStar(&m_window->viewport);
+		m_window = new Window(600, 600);
+		astar = new graph(&m_window->viewport);
 
 		sort.viewport = &m_window->viewport;
 		tree.viewport = &m_window->viewport;
@@ -159,6 +158,13 @@ public:
 						SDL_GetMouseState(&mouseX, &mouseY);
 						astar->color(mouseX, mouseY, buttons);
 						break;
+					case SDLK_r:
+						if (evnt.key.keysym.mod & KMOD_CTRL)
+							astar->init();
+						else
+							astar->reset();
+
+						break;
 					}
 					break;
 				case SDL_KEYUP:
@@ -184,6 +190,7 @@ public:
 						sort.width = evnt.window.data1 / sort.N * 0.95;
 						sort.spacing = (float)m_window->viewport.w / ((sort.N - 1) * 2);
 						tree.refreshpos();
+						astar->refreshSize();
 						break;
 					case SDL_WINDOWEVENT_MINIMIZED:
 						SDL_Log("Window %d minimized", evnt.window.windowID);
@@ -295,7 +302,7 @@ public:
 					else if (combo_selected > 8)
 					{
 						const float flow = 0.0f;
-						const float fhigh = 0.5f;
+						const float fhigh = 0.15f;
 						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &astar->sleeptime, &flow, &fhigh);
 					}
 
@@ -403,7 +410,7 @@ public:
 
 	sortingClass sort;
 	avlTree<int> tree;
-	aStar* astar = nullptr;
+	graph* astar = nullptr;
 
 
 	float deltaTime = 0;
@@ -420,7 +427,9 @@ public:
 		"shell sort2",
 		"heap sort",
 		"avl Tree",
-		"path finding" };
+		"A Star",
+		"BestFirst",
+		"Dijkstra" };
 
 	int combo_selected = 9;
 };

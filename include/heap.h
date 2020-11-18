@@ -32,12 +32,8 @@ class heap
 {
 	std::vector<T> m_data;
 
-
 	//std::function<bool(const T const&, const T const&)> cmp;
 	bool (*cmp)(T const&, T const&);
-
-
-
 
 	void balanceBelow(const unsigned& index)
 	{
@@ -88,10 +84,10 @@ class heap
 		{
 			balanceBelow(i);
 		}
-		for (--start; start >= 0; --start)
-		{
-			balanceBelow(start);
-		}
+		if (start > 2)
+			for (--start; start >= 0; --start)
+				balanceBelow(start);
+
 	}
 
 	inline bool hasright(unsigned index) { return 2 * (int)index + 1 < (int)m_data.size() - 1; }
@@ -111,8 +107,7 @@ public:
 
 	heap(bool (*_cmp)(T const&, T const&)) : cmp(_cmp) {}
 
-	/*template<class _cmp1
-	heap(_cmp1 _cmp) : cmp(_cmp) {}*/
+	void changeComp(bool (*_cmp)(T const&, T const&)) { cmp = _cmp; }
 
 	void addArray(const T* data, const size_t& size) {
 		for (int i = 0; i < size; i++)
@@ -150,5 +145,9 @@ public:
 		m_data.pop_back();
 		balanceBelow(0);
 		return ret;
+	}
+
+	void adjust(const T& value) {
+
 	}
 };

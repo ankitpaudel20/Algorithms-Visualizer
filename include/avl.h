@@ -485,7 +485,6 @@ struct treeNode
 			delete leftChild;
 		if (m_data != nullptr)
 			delete m_data;
-		std::cout << "node destroyed" << std::endl;
 	}
 
 	bool operator>(const treeNode& rhs) const { return m_data > rhs.m_data; }

@@ -156,25 +156,42 @@ struct Circle
 
 struct graphNode {
 	vec2<float> pos;
-	double H, G;
+	double F = std::numeric_limits<double>::infinity(), H = std::numeric_limits<double>::infinity(), G = std::numeric_limits<double>::infinity();
 	vec2<float> size, origin;
 	Uint32 color;
 	//Uint8 property = 0x00;
 	bool visited = false, isWall = false;
 
 
-	graphNode* parent;
+	graphNode* parent=nullptr;
 
 	void draw(SDL_Renderer* renderer, const bool& fill) {
 		if (fill)
 			boxColor(renderer, pos.x - origin.x, pos.y - origin.y, pos.x - origin.x + size.x, pos.y - origin.y + size.y, color);
 		else
 			rectangleColor(renderer, pos.x - origin.x, pos.y - origin.y, pos.x - origin.x + size.x, pos.y - origin.y + size.y, color);
+
 	}
 
-	void calculateHL(const graphNode* end) {
-		G = parent->G + 1;
+	void calculateHL(const graphNode* end, const double& weight) {
+		G = parent->G + weight;
 		H = vec2<float>::dist(pos, end->pos);
+		F = G + H;
+	}
+
+	void updateHL(const graphNode* end, graphNode* _parent, const double& weight) {
+		double _G = _parent->G + weight;
+		H = vec2<float>::dist(pos, end->pos);
+		if (G == std::numeric_limits<float>::infinity())
+		{
+			G = _G;
+		}
+		else if (_G < G)
+		{
+			parent = _parent;
+			G = _G;
+		}
+		F = G + H;
 	}
 
 	bool operator <(const graphNode& rhs) {

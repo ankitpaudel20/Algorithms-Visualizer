@@ -6,24 +6,25 @@
 #include "SDL2/SDL.h"
 #include "SDL2/SDL2_gfxPrimitives.h"
 
-
 typedef enum {
 	NORMAL = 0x0001, WALL = 0x0002, START = 0x0004, END = 0x0008
 } nodeProps;
 
 
 
-class aStar {
+class graph {
 	std::vector<graphNode> grid;
 	vec2<int> gridSize, newSize;
 	float rectsize = 20;
 	bool fill = true;
-
+	bool diagonal = false;
 	heap<graphNode*> check_queue;
 
 
 	graphNode* start = nullptr;
 	graphNode* end = nullptr;
+	Uint32 startx, starty, endx, endy;
+
 	std::thread* thread = nullptr;
 	bool done = false;
 
@@ -42,12 +43,61 @@ class aStar {
 public:
 	float sleeptime = 0.05;
 
-	aStar(const SDL_Rect* _viewport) :viewport(_viewport), check_queue([](graphNode* const& lhs, graphNode* const& rhs) {return (lhs->H + lhs->G) < (rhs->H + rhs->G); }) {
-		init(vec2<int>(viewport->w / rectsize - 1, viewport->h / rectsize - 1));
+	graph(const SDL_Rect* _viewport) :viewport(_viewport), check_queue([](graphNode* const& lhs, graphNode* const& rhs) {return (lhs->H + lhs->G) < (rhs->H + rhs->G); }) {
+		newSize.x = viewport->w / rectsize - 1;
+		newSize.y = viewport->h / rectsize - 1;
+		init();
+		startx = get(0, 0).pos.x - get(0, 0).origin.x;
+		starty = get(0, 0).pos.y - get(0, 0).origin.y;
+		endx = get(gridSize.x - 1, 0).pos.x + get(gridSize.x - 1, 0).origin.x;
+		endy = get(0, gridSize.y - 1).pos.y + get(0, gridSize.y - 1).origin.y;
 	}
 
+	void init() {
+		gridSize = newSize;
+		newSize = newSize;
+		grid.clear();
+		grid.reserve(gridSize.x * gridSize.y);
+		graphNode rect;
+		start = nullptr;
+		end = nullptr;
+		for (size_t i = 0; i < gridSize.y; i++) {
+			for (size_t j = 0; j < gridSize.x; j++) {
+				rect.color = 0xFFFF00FF;
+				rect.size = vec2<float>(rectsize);
+				rect.origin = vec2<float>(rectsize / 2);
+				rect.pos = vec2<float>((j + 1) * rectsize + viewport->x, (i + 1) * rectsize + viewport->y);
+				rect.isWall = false;
+				rect.visited = false;
 
-	void solve() {
+				grid.push_back(rect);
+			}
+		}
+	}
+
+	void expandNode(graphNode* node, const vec2<int>& delpos, const float& weight) {
+		int index = delpos.x + gridSize.x * delpos.y;
+		if (!(node + index)->visited)
+		{
+			(node + index)->parent = node;
+			(node + index)->color = 0x5DEAD0FF;
+			(node + index)->calculateHL(end, weight);
+			check_queue.push(node + index);
+			(node + index)->visited = true;
+		}
+		else if ((node + index) != start)
+		{
+			float G = (node + index)->G;
+			(node + index)->updateHL(end, node, weight);
+			if (G != (node + index)->G)
+				check_queue.remakeHeap();
+		}
+	}
+
+	void solveAstar() {
+		check_queue.changeComp([](graphNode* const& lhs, graphNode* const& rhs) {
+			return ((lhs->H + lhs->G) == (rhs->H + rhs->G)) ? lhs->H < rhs->H : ((lhs->H + lhs->G) < (rhs->H + rhs->G));
+			});
 
 		if (!(start && end))
 		{
@@ -61,26 +111,23 @@ public:
 		{
 			i.parent = nullptr;
 			i.visited = false;
-			i.G = 0;
-			i.H = 0;
+			i.G = std::numeric_limits<double>::infinity();
+			i.H = std::numeric_limits<double>::infinity();
 		}
 
-		/*	std::vector<graphNode*> nVisited;
-			nVisited.resize(grid.size());*/
 
 		graphNode* current = start;
 		current->G = 0;
 		current->H = vec2<float>::dist(current->pos, end->pos);
 		current->visited = true;
 		check_queue.push(current);
+		int a = sleeptime * 1000;
 
-		Uint32 startx = get(0, 0).pos.x - get(0, 0).origin.x;
-		Uint32 starty = get(0, 0).pos.y - get(0, 0).origin.y;
-		Uint32 endx = get(gridSize.x - 1, 0).pos.x + get(gridSize.x - 1, 0).origin.x;
-		Uint32 endy = get(0, gridSize.y - 1).pos.y + get(0, gridSize.y - 1).origin.y;
+		bool inLeft, inRight, inTop, inBottom;
+		auto root = sqrt(2);
 
 		do {
-			int a = sleeptime * 1000;
+			a = sleeptime * 1000;
 			current = check_queue.pop();
 
 			if (current == end) {
@@ -90,71 +137,55 @@ public:
 					current = current->parent;
 				}
 				do {
+					a = sleeptime * 1000;
 					current->color = 0xFFFFFFFF;			//white color
 					current = current->parent;
+					std::this_thread::sleep_for(std::chrono::milliseconds(a));
 				} while (current != start);
 
 				current->color = 0x0000FFFF;
 				break;
 			}
+
+			current->color = (current != start) ? 0x000000FF : current->color;
+
+			inLeft = current->pos.x - rectsize > startx;
+			inRight = current->pos.x + rectsize < endx;
+			inTop = current->pos.y - rectsize > starty;
+			inBottom = current->pos.y + rectsize < endy;
+
 			std::this_thread::sleep_for(std::chrono::milliseconds(a));
 
-			bool added = false;
+			if (inRight && !(current + 1)->isWall)
+				expandNode(current, vec2<int>(1, 0), rectsize);
 
-			if (current->pos.x + rectsize < endx)
-			{
-				if (!(current + 1)->isWall && !(current + 1)->visited)
-				{
-					(current + 1)->parent = current;
-					(current + 1)->calculateHL(end);
-					(current + 1)->color = 0x5DEAD0FF;
-					check_queue.push(current + 1);
-					(current + 1)->visited = true;
-					added = true;
-				}
-			}
+			if (inLeft && !(current - 1)->isWall)
+				expandNode(current, vec2<int>(-1, 0), rectsize);
 
-			if (current->pos.x - rectsize > startx)
-			{
-				if (!(current - 1)->isWall && !(current - 1)->visited)
-				{
-					(current - 1)->parent = current;
-					(current - 1)->calculateHL(end);
-					(current - 1)->color = 0x5DEAD0FF;
-					check_queue.push(current - 1);
-					(current - 1)->visited = true; added = true;
-				}
-			}
+			if (inBottom && !(current + gridSize.x)->isWall)
+				expandNode(current, vec2<int>(0, 1), rectsize);
 
-			if (current->pos.y + rectsize < endy)
+			if (inTop && !(current - gridSize.x)->isWall)
+				expandNode(current, vec2<int>(0, -1), rectsize);
+
+			if (diagonal)
 			{
-				if (!(current + gridSize.x)->isWall && !(current + gridSize.x)->visited)
-				{
-					(current + gridSize.x)->parent = current;
-					(current + gridSize.x)->calculateHL(end);
-					(current + gridSize.x)->color = 0x5DEAD0FF;
-					check_queue.push(current + gridSize.x);
-					(current + gridSize.x)->visited = true; added = true;
-				}
+				if (inRight && inBottom && !(current + 1 + gridSize.x)->isWall)
+					expandNode(current, vec2<int>(1, 1), root * rectsize);
+
+				if (inRight && inTop && !(current + 1 - gridSize.x)->isWall)
+					expandNode(current, vec2<int>(1, -1), root * rectsize);
+
+				if (inLeft && inBottom && !(current - 1 + gridSize.x)->isWall)
+					expandNode(current, vec2<int>(-1, 1), root * rectsize);
+
+				if (inLeft && inTop && !(current - 1 - gridSize.x)->isWall)
+					expandNode(current, vec2<int>(-1, -1), root * rectsize);
 			}
 
-			if (current->pos.y - rectsize > starty)
-			{
-				if (!(current - gridSize.x)->isWall && !(current - gridSize.x)->visited)
-				{
-					(current - gridSize.x)->parent = current;
-					(current - gridSize.x)->calculateHL(end);
-					(current - gridSize.x)->color = 0x5DEAD0FF;
-					check_queue.push(current - gridSize.x);
-					(current - gridSize.x)->visited = true; added = true;
-				}
-			}
-			if (!added)
-			{
-				//__debugbreak();
-			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(a));
-			current->color = 0xA6A938FF;
+			current->color = (current != start) ? 0xA6A938FF : current->color;
+
 			std::this_thread::sleep_for(std::chrono::milliseconds(a));
 		} while (!check_queue.empty());
 
@@ -167,6 +198,233 @@ public:
 			}
 		}
 
+		while (!check_queue.empty())
+			check_queue.pop();
+
+
+		done = true;
+	}
+
+
+	void solveBestFirst() {
+		check_queue.changeComp([](graphNode* const& lhs, graphNode* const& rhs) {return (lhs->H) < (rhs->H); });
+
+		if (!(start && end))
+		{
+			done = true;
+			return;
+		}
+
+		bool found = false;
+
+		for (auto& i : grid)
+		{
+			i.parent = nullptr;
+			i.visited = false;
+			i.G = std::numeric_limits<double>::infinity();
+			i.H = std::numeric_limits<double>::infinity();
+		}
+
+
+		graphNode* current = start;
+		current->G = 0;
+		current->H = vec2<float>::dist(current->pos, end->pos);
+		current->visited = true;
+		check_queue.push(current);
+		int a = sleeptime * 1000;
+
+		bool inLeft, inRight, inTop, inBottom;
+		auto root = sqrt(2);
+
+		do {
+			a = sleeptime * 1000;
+
+
+
+			current = check_queue.pop();
+
+			if (current == end) {
+				found = true;
+				if (current->parent) {
+					current->color = 0x00FF00FF;
+					current = current->parent;
+				}
+				do {
+					a = sleeptime * 1000;
+					current->color = 0xFFFFFFFF;			//white color
+					current = current->parent;
+					std::this_thread::sleep_for(std::chrono::milliseconds(a));
+				} while (current != start);
+
+				current->color = 0x0000FFFF;
+				break;
+			}
+
+			current->color = (current != start) ? 0x000000FF : current->color;
+
+			inLeft = current->pos.x - rectsize > startx;
+			inRight = current->pos.x + rectsize < endx;
+			inTop = current->pos.y - rectsize > starty;
+			inBottom = current->pos.y + rectsize < endy;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(a));
+
+			if (inRight && !(current + 1)->isWall)
+				expandNode(current, vec2<int>(1, 0), rectsize);
+
+			if (inLeft && !(current - 1)->isWall)
+				expandNode(current, vec2<int>(-1, 0), rectsize);
+
+			if (inBottom && !(current + gridSize.x)->isWall)
+				expandNode(current, vec2<int>(0, 1), rectsize);
+
+			if (inTop && !(current - gridSize.x)->isWall)
+				expandNode(current, vec2<int>(0, -1), rectsize);
+
+			if (diagonal)
+			{
+				if (inRight && inBottom && !(current + 1 + gridSize.x)->isWall)
+					expandNode(current, vec2<int>(1, 1), root * rectsize);
+
+				if (inRight && inTop && !(current + 1 - gridSize.x)->isWall)
+					expandNode(current, vec2<int>(1, -1), root * rectsize);
+
+				if (inLeft && inBottom && !(current - 1 + gridSize.x)->isWall)
+					expandNode(current, vec2<int>(-1, 1), root * rectsize);
+
+				if (inLeft && inTop && !(current - 1 - gridSize.x)->isWall)
+					expandNode(current, vec2<int>(-1, -1), root * rectsize);
+			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(a));
+			current->color = (current != start) ? 0xA6A938FF : current->color;
+			std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		} while (!check_queue.empty());
+
+		if (!found)
+		{
+			printf("it cannot be found");
+			while (current != start) {
+				current->color = 0xFFFFFFFF;			//white color
+				current = current->parent;
+			}
+		}
+
+		while (!check_queue.empty())
+			check_queue.pop();
+
+
+		done = true;
+	}
+
+	void solveDijkstra() {
+
+		//checkQueue
+		check_queue.changeComp([](graphNode* const& lhs, graphNode* const& rhs) {return (lhs->G) < (rhs->G); });
+
+
+		if (!(start && end))
+		{
+			done = true;
+			return;
+		}
+
+		bool found = false;
+
+		for (auto& i : grid)
+		{
+			i.parent = nullptr;
+			i.visited = false;
+			i.G = std::numeric_limits<double>::infinity();
+			i.H = std::numeric_limits<double>::infinity();
+		}
+
+
+		graphNode* current = start;
+		current->G = 0;
+		current->H = vec2<float>::dist(current->pos, end->pos);
+		current->visited = true;
+		check_queue.push(current);
+		int a = sleeptime * 1000;
+
+		bool inLeft, inRight, inTop, inBottom;
+		auto root = sqrt(2);
+
+		do {
+			a = sleeptime * 1000;
+			current = check_queue.pop();
+
+			if (current == end) {
+				found = true;
+				if (current->parent) {
+					current->color = 0x00FF00FF;
+					current = current->parent;
+				}
+				do {
+					a = sleeptime * 1000;
+					current->color = 0xFFFFFFFF;			//white color
+					current = current->parent;
+					std::this_thread::sleep_for(std::chrono::milliseconds(a));
+				} while (current != start);
+
+				current->color = 0x0000FFFF;
+				break;
+			}
+
+			current->color = (current != start) ? 0x000000FF : current->color;
+
+			inLeft = current->pos.x - rectsize > startx;
+			inRight = current->pos.x + rectsize < endx;
+			inTop = current->pos.y - rectsize > starty;
+			inBottom = current->pos.y + rectsize < endy;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(a));
+
+
+			if (inRight && !(current + 1)->isWall)
+				expandNode(current, vec2<int>(1, 0), rectsize);
+
+			if (inLeft && !(current - 1)->isWall)
+				expandNode(current, vec2<int>(-1, 0), rectsize);
+
+			if (inBottom && !(current + gridSize.x)->isWall)
+				expandNode(current, vec2<int>(0, 1), rectsize);
+
+			if (inTop && !(current - gridSize.x)->isWall)
+				expandNode(current, vec2<int>(0, -1), rectsize);
+
+			if (diagonal)
+			{
+				if (inRight && inBottom && !(current + 1 + gridSize.x)->isWall)
+					expandNode(current, vec2<int>(1, 1), root * rectsize);
+
+				if (inRight && inTop && !(current + 1 - gridSize.x)->isWall)
+					expandNode(current, vec2<int>(1, -1), root * rectsize);
+
+				if (inLeft && inBottom && !(current - 1 + gridSize.x)->isWall)
+					expandNode(current, vec2<int>(-1, 1), root * rectsize);
+
+				if (inLeft && inTop && !(current - 1 - gridSize.x)->isWall)
+					expandNode(current, vec2<int>(-1, -1), root * rectsize);
+			}
+
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(a));
+			current->color = (current != start) ? 0xA6A938FF : current->color;
+			std::this_thread::sleep_for(std::chrono::milliseconds(a));
+		} while (!check_queue.empty());
+
+		if (!found)
+		{
+			printf("it cannot be found");
+			while (current != start) {
+				current->color = 0xFFFFFFFF;			//white color
+				current = current->parent;
+			}
+		}
+
+		while (!check_queue.empty())
+			check_queue.pop();
 
 
 		done = true;
@@ -189,6 +447,19 @@ public:
 				hlineRGBA(renderer, get(0, i).pos.x - get(0, i).origin.x, get(gridSize.x - 1, i).pos.x + get(gridSize.x - 1, i).origin.x, get(0, i).pos.y + get(0, i).origin.y, 0, 0, 0, 255);
 			}
 		}
+		for (auto& i : grid)
+		{
+			if (i.color == 0xFFFFFFFF || i.color == 0x00ff00ff)
+			{
+				SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0xFF, 0xFF);
+				if (i.parent != nullptr) {
+					SDL_RenderDrawLine(renderer, i.pos.x, i.pos.y, i.parent->pos.x, i.parent->pos.y);
+
+				}
+			}
+		}
+
+
 
 		if (thread != nullptr)
 		{
@@ -205,37 +476,15 @@ public:
 
 	}
 
-	void init(const vec2<int>& newsize) {
-		gridSize = newsize;
-		newSize = newsize;
-		grid.clear();
-		grid.reserve(gridSize.x * gridSize.y);
-		graphNode rect;
-		start = nullptr;
-		end = nullptr;
-		for (size_t i = 0; i < gridSize.y; i++) {
-			for (size_t j = 0; j < gridSize.x; j++) {
-				rect.color = 0xFFFF00FF;
-				rect.size = vec2<float>(rectsize);
-				rect.origin = vec2<float>(rectsize / 2);
-				rect.pos = vec2<float>((j + 1) * rectsize + viewport->x, (i + 1) * rectsize + viewport->y);
-				rect.isWall = false;
-				rect.visited = false;
-
-				grid.push_back(rect);
-			}
-		}
+	void refreshSize() {
+		newSize.x = viewport->w / rectsize - 1;
+		newSize.y = viewport->h / rectsize - 1;
 	}
+
 
 	void color(const int& mx, const int& my, const Uint8& flags) {
 		if (!flags)
 			return;
-
-
-		Uint32 startx = get(0, 0).pos.x - get(0, 0).origin.x;
-		Uint32 starty = get(0, 0).pos.y - get(0, 0).origin.y;
-		Uint32 endx = get(gridSize.x - 1, 0).pos.x + get(gridSize.x - 1, 0).origin.x;
-		Uint32 endy = get(0, gridSize.y - 1).pos.y + get(0, gridSize.y - 1).origin.y;
 
 		if (mx <= startx || mx >= endx || my <= starty || my >= endy)
 			return;
@@ -248,20 +497,17 @@ public:
 		if (flags & (1 << 0))
 		{
 			get(x2, y2).color = 0xFF0000FF;
-			//get(x2, y2).property = 0x00;
 
 			if (&get(x2, y2) == start)
 				start = nullptr;
 			else if (&get(x2, y2) == end)
 				end = nullptr;
 
-			//get(x2, y2).property |= nodeProps::WALL;
 			get(x2, y2).isWall = true;
 		}
 		else if (flags & (1 << 1))
 		{
 			get(x2, y2).color = 0xFFFF00FF;
-			//get(x2, y2).property = 0x00;
 
 			if (&get(x2, y2) == start)
 				start = nullptr;
@@ -269,16 +515,11 @@ public:
 				end = nullptr;
 
 			get(x2, y2).isWall = false;
-
-			//get(x2, y2).property |= nodeProps::NORMAL;
 		}
 		else if (flags & (1 << 2))
 		{
 			if (!start)
 			{
-				/*get(x2, y2).property = 0x00;
-				get(x2, y2).property |= nodeProps::START;
-				get(x2, y2).property |= nodeProps::NORMAL;*/
 				get(x2, y2).color = 0x0000FFFF;
 				start = &get(x2, y2);
 				get(x2, y2).isWall = false;
@@ -288,9 +529,6 @@ public:
 		{
 			if (!end)
 			{
-				/*get(x2, y2).property = 0x00;
-				get(x2, y2).property |= nodeProps::END;
-				get(x2, y2).property |= nodeProps::NORMAL;*/
 				get(x2, y2).color = 0x00FF00FF;
 				end = &get(x2, y2);
 				get(x2, y2).isWall = false;
@@ -299,7 +537,7 @@ public:
 	}
 
 	void reset() {
-		start = end = nullptr;
+		//start = end = nullptr;
 		for (auto& i : grid)
 		{
 			if (!i.isWall)
@@ -308,6 +546,10 @@ public:
 				i.parent = nullptr;
 			}
 		}
+		if (start)
+			start->color = 0x0000FFFF;
+		if (end)
+			end->color = 0x00FF00FF;
 	}
 
 	void imguiDraw(appState& state, int& combo_selected, Window* window) {
@@ -324,22 +566,41 @@ public:
 
 		if (ImGui::Button("Reload"))
 		{
-			init(newSize);
+			init();
 		}
-
 		ImGui::SameLine();
 		if (ImGui::Button("reset"))
 		{
 			reset();
 		}
-		ImGui::SameLine();
+		//ImGui::SameLine();
 		if (ImGui::Button("Solve"))
 		{
-			thread = new std::thread(&aStar::solve, this);
+			reset();
+			switch (combo_selected)
+			{
+			case 9:
+				thread = new std::thread(&graph::solveAstar, this);
+				break;
+			case 10:
+				thread = new std::thread(&graph::solveBestFirst, this);
+				break;
+			case 11:
+				thread = new std::thread(&graph::solveDijkstra, this);
+				break;
+			default:
+				break;
+			}
+
+			//thread = new std::thread(&graph::solveDijkstra, this);
 			//solve();
 			state = appState::Animating;
 		}
+
 		ImGui::SameLine();
 		ImGui::Checkbox("Fill? ", &fill);
+		ImGui::SameLine();
+		ImGui::Checkbox("use diagonal? ", &diagonal);
+
 	}
 };
