@@ -6,6 +6,7 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
+#include <mutex>
 #include "common.h"
 #include "SDL2/SDL.h"
 #include "SDL2/SDL2_gfxPrimitives.h"
@@ -20,12 +21,12 @@ namespace treeAdd
 	unsigned indent_counter;
 }
 
-
-struct shared_data {
+struct shared_data
+{
 	std::mutex nmutex;
 	std::vector<Circle> nodes;
-	float* deltatime;
-	float* sleeptime;
+	float *deltatime;
+	float *sleeptime;
 };
 
 template <class T>
@@ -33,7 +34,7 @@ struct treeNode
 {
 	struct rotation
 	{
-		static treeNode<T>* rr(treeNode<T>* node1)
+		static treeNode<T> *rr(treeNode<T> *node1)
 		{
 			auto node2 = node1->rightChild;
 			auto strayLeftNode2 = node2->leftChild;
@@ -59,7 +60,7 @@ struct treeNode
 			return node2;
 		};
 
-		static treeNode<T>* lr(treeNode<T>* node1)
+		static treeNode<T> *lr(treeNode<T> *node1)
 		{
 			auto node2 = node1->leftChild;
 			auto node3 = node1->leftChild->rightChild;
@@ -95,7 +96,7 @@ struct treeNode
 			return node3;
 		};
 
-		static treeNode<T>* rl(treeNode<T>* node1)
+		static treeNode<T> *rl(treeNode<T> *node1)
 		{
 			auto node2 = node1->rightChild;
 			auto node3 = node1->rightChild->leftChild;
@@ -133,7 +134,7 @@ struct treeNode
 			return node3;
 		};
 
-		static treeNode<T>* ll(treeNode<T>* node1)
+		static treeNode<T> *ll(treeNode<T> *node1)
 		{
 			auto node2 = node1->leftChild;
 			auto strayRightNode2 = node2->rightChild;
@@ -164,18 +165,16 @@ struct treeNode
 	Circle circle;
 	//SDL_Rect circle.texPos;
 
-	T* m_data = nullptr;
+	T *m_data = nullptr;
 	unsigned int leftHeight = 0;
 	unsigned int rightHeight = 0;
 	unsigned depth;
 
-	treeNode<T>* leftChild = nullptr;
-	treeNode<T>* rightChild = nullptr;
-	treeNode<T>* parent = nullptr;
+	treeNode<T> *leftChild = nullptr;
+	treeNode<T> *rightChild = nullptr;
+	treeNode<T> *parent = nullptr;
 
-
-
-	static void refresh(treeNode<T>* Node, uint32_t& maxdepth, const vec2<float>& dist)
+	static void refresh(treeNode<T> *Node, uint32_t &maxdepth, const vec2<float> &dist)
 	{
 		if (!Node)
 			return;
@@ -190,7 +189,7 @@ struct treeNode
 			Node->leftHeight = Node->leftChild->getHeight() + 1;
 			Node->depth = Node->leftChild->depth - 1;
 		}
-		treeNode<T>* rootpos;
+		treeNode<T> *rootpos;
 		if (!Node->parent)
 		{
 			rootpos = Node;
@@ -198,9 +197,11 @@ struct treeNode
 
 		auto newCurrentNode = Node->balance();
 
-		if (newCurrentNode != Node) {
+		if (newCurrentNode != Node)
+		{
 			maxdepth = newCurrentNode->refreshDepth();
-			if (!newCurrentNode->parent) {
+			if (!newCurrentNode->parent)
+			{
 				newCurrentNode->circle.pos = rootpos->circle.pos;
 				newCurrentNode->circle.texPos = rootpos->circle.texPos;
 				newCurrentNode->circle.texInit(newCurrentNode->circle.letter);
@@ -213,7 +214,8 @@ struct treeNode
 		refresh(newCurrentNode->parent, maxdepth, dist);
 	}
 
-	void refreshPos(const uint32_t& maxdepth, const vec2<float>& dist) {
+	void refreshPos(const uint32_t &maxdepth, const vec2<float> &dist)
+	{
 		if (parent)
 		{
 			if (parent->rightChild == this)
@@ -237,13 +239,13 @@ struct treeNode
 			rightChild->refreshPos(maxdepth, dist);
 	}
 
-
 	uint32_t refreshDepth()
 	{
 		uint32_t max, temp = 0;
 		if (!parent)
 			depth = 0;
-		else {
+		else
+		{
 			depth = parent->depth + 1;
 		}
 
@@ -257,8 +259,7 @@ struct treeNode
 		return max < temp ? temp : max;
 	}
 
-
-	treeNode<T>* balance()
+	treeNode<T> *balance()
 	{
 		int diff = leftHeight - rightHeight;
 		if (diff >= 2)
@@ -291,7 +292,7 @@ struct treeNode
 		return std::max(rightHeight, leftHeight);
 	}
 
-	treeNode(const T& data, treeNode<T>* parentptr, const uint32_t& _depth, uint32_t& maxdepth)
+	treeNode(const T &data, treeNode<T> *parentptr, const uint32_t &_depth, uint32_t &maxdepth)
 	{
 		parent = parentptr;
 		depth = _depth;
@@ -300,7 +301,7 @@ struct treeNode
 		memcpy(m_data, &data, sizeof(T));
 	}
 
-	void addData(const T& data, const uint32_t& _depth, uint32_t& maxdepth, SDL_Texture* letters, const vec2<float>& dist, shared_data& shared)
+	void addData(const T &data, const uint32_t &_depth, uint32_t &maxdepth, SDL_Texture *letters, const vec2<float> &dist, shared_data &shared)
 	{
 		shared.nmutex.lock();
 		Circle temp;
@@ -311,12 +312,11 @@ struct treeNode
 
 		std::this_thread::sleep_for(std::chrono::milliseconds((uint32_t)(*shared.sleeptime * 1000)));
 
-
 		shared.nmutex.lock();
 		shared.nodes.clear();
 		shared.nmutex.unlock();
 
-		if (data > * m_data)
+		if (data > *m_data)
 		{
 			if (rightChild != nullptr)
 				rightChild->addData(data, _depth + 1, maxdepth, letters, dist, shared);
@@ -353,7 +353,6 @@ struct treeNode
 				std::this_thread::sleep_for(std::chrono::milliseconds((uint32_t)(*shared.sleeptime * 500)));
 
 				refresh(this->leftChild, maxdepth, dist);
-
 			}
 		}
 
@@ -365,16 +364,14 @@ struct treeNode
 
 		std::this_thread::sleep_for(std::chrono::milliseconds((uint32_t)(*shared.sleeptime * 1000)));
 
-
 		shared.nmutex.lock();
 		shared.nodes.clear();
 		shared.nmutex.unlock();
 	}
 
-
-	void addData2(const T& data, const uint32_t& _depth, uint32_t& maxdepth, SDL_Texture* letters, const vec2<float>& dist)
+	void addData2(const T &data, const uint32_t &_depth, uint32_t &maxdepth, SDL_Texture *letters, const vec2<float> &dist)
 	{
-		if (data > * m_data)
+		if (data > *m_data)
 		{
 			if (rightChild != nullptr)
 				rightChild->addData2(data, _depth + 1, maxdepth, letters, dist);
@@ -405,12 +402,11 @@ struct treeNode
 				leftChild->circle.texPos.x = leftChild->circle.pos.x - leftChild->circle.texPos.w / 2;
 				leftChild->circle.texPos.y = leftChild->circle.pos.y - leftChild->circle.texPos.h / 2;
 				refresh(this->leftChild, maxdepth, dist);
-
 			}
 		}
 	}
 
-	treeNode<T>* search(const T& data, shared_data& shared)
+	treeNode<T> *search(const T &data, shared_data &shared)
 	{
 		shared.nmutex.lock();
 		Circle temp;
@@ -421,14 +417,13 @@ struct treeNode
 
 		std::this_thread::sleep_for(std::chrono::milliseconds((uint32_t)(*shared.sleeptime * 1000)));
 
-
 		shared.nmutex.lock();
 		shared.nodes.clear();
 		shared.nmutex.unlock();
 
 		if (*m_data == data)
 			return this;
-		else if (data > * m_data)
+		else if (data > *m_data)
 		{
 			if (!rightChild)
 				return nullptr;
@@ -452,10 +447,9 @@ struct treeNode
 		shared.nmutex.lock();
 		shared.nodes.clear();
 		shared.nmutex.unlock();
-
 	}
 
-	treeNode<T>* greatest(shared_data& shared)
+	treeNode<T> *greatest(shared_data &shared)
 	{
 		shared.nmutex.lock();
 		Circle temp;
@@ -476,7 +470,6 @@ struct treeNode
 			return rightChild->greatest(shared);
 	};
 
-
 	~treeNode()
 	{
 		if (rightChild != nullptr)
@@ -487,23 +480,23 @@ struct treeNode
 			delete m_data;
 	}
 
-	bool operator>(const treeNode& rhs) const { return m_data > rhs.m_data; }
+	bool operator>(const treeNode &rhs) const { return m_data > rhs.m_data; }
 
-	bool operator>(const T& rhs) const { return m_data > m_data; }
+	bool operator>(const T &rhs) const { return m_data > m_data; }
 
-	bool operator<(const treeNode& rhs) const { return m_data < rhs.m_data; }
+	bool operator<(const treeNode &rhs) const { return m_data < rhs.m_data; }
 
-	bool operator>=(const treeNode& rhs) const { return m_data >= rhs.m_data; }
+	bool operator>=(const treeNode &rhs) const { return m_data >= rhs.m_data; }
 
-	bool operator<=(const treeNode& rhs) const { return m_data <= rhs.m_data; }
+	bool operator<=(const treeNode &rhs) const { return m_data <= rhs.m_data; }
 
-	bool operator==(const treeNode& rhs) const { return m_data == rhs.m_data; }
+	bool operator==(const treeNode &rhs) const { return m_data == rhs.m_data; }
 
-	friend std::ostream& operator<<(std::ostream& out, const treeNode<T>& n)
+	friend std::ostream &operator<<(std::ostream &out, const treeNode<T> &n)
 	{
 		if (n.leftChild == nullptr)
 			out << *n.m_data << "("
-			<< "NaN";
+				<< "NaN";
 		else
 			out << *n.m_data << "(" << *n.leftChild;
 
@@ -511,7 +504,7 @@ struct treeNode
 
 		if (n.rightChild == nullptr)
 			out << "NaN"
-			<< ")";
+				<< ")";
 		else
 			out << *n.rightChild << ")";
 
@@ -523,10 +516,10 @@ struct treeNode
 		return out;
 	}
 
-	void drawCircle(SDL_Renderer* renderer, vec2<uint32_t> parpos, const float& radius, const vec2<float>& dist, const uint32_t& maxdepth, SDL_Texture* (*getText)(std::string, const std::string&, const int&, const uint32_t&, SDL_Renderer*))
+	void drawCircle(SDL_Renderer *renderer, vec2<uint32_t> parpos, const float &radius, const vec2<float> &dist, const uint32_t &maxdepth, SDL_Texture *(*getText)(std::string, const std::string &, const int &, const uint32_t &, SDL_Renderer *))
 	{
 		parpos.y = parpos.y + dist.y;
-		SDL_Texture* text = getText(std::to_string(*m_data), "segoeui", 15, 0, renderer);
+		SDL_Texture *text = getText(std::to_string(*m_data), "segoeui", 15, 0, renderer);
 		SDL_Rect rect;
 		SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
 
@@ -565,7 +558,7 @@ struct treeNode
 			rightChild->drawCircle(renderer, parpos, radius, dist, maxdepth, getText);
 	}
 
-	void drawLines(SDL_Renderer* renderer, vec2<uint32_t> parpos, const float& radius, const vec2<float>& dist, const uint32_t& maxdepth, SDL_Texture* (*getText)(std::string, const std::string&, const int&, const uint32_t&, SDL_Renderer*))
+	void drawLines(SDL_Renderer *renderer, vec2<uint32_t> parpos, const float &radius, const vec2<float> &dist, const uint32_t &maxdepth, SDL_Texture *(*getText)(std::string, const std::string &, const int &, const uint32_t &, SDL_Renderer *))
 	{
 
 		if (parent->leftChild == this)
@@ -588,12 +581,12 @@ struct treeNode
 			rightChild->drawLines(renderer, parpos, radius, dist, maxdepth, getText);
 	}
 
-	void draw(SDL_Renderer* renderer, const float& radius, SDL_Texture* (*getText)(std::string, const std::string&, const int&, const uint32_t&, SDL_Renderer*)) {
+	void draw(SDL_Renderer *renderer, const float &radius, SDL_Texture *(*getText)(std::string, const std::string &, const int &, const uint32_t &, SDL_Renderer *))
+	{
 		filledCircleColor(renderer, circle.pos.x, circle.pos.y, radius, 0xFFFFFFFF);
 		SDL_RenderCopy(renderer, circle.letter, nullptr, &circle.texPos);
 
-
-		SDL_Texture* text = getText(std::to_string(leftHeight), "segoeui", 10, 0, renderer);
+		SDL_Texture *text = getText(std::to_string(leftHeight), "segoeui", 10, 0, renderer);
 		SDL_Rect rect;
 		SDL_QueryTexture(text, nullptr, nullptr, &rect.w, &rect.h);
 		rect.x = circle.pos.x - rect.w / 4 - radius;
@@ -605,17 +598,20 @@ struct treeNode
 		rect.x = rect.x + 2 * radius - rect.w / 4;
 		SDL_RenderCopy(renderer, text, nullptr, &rect);
 
-		if (leftChild) {
+		if (leftChild)
+		{
 			//SDL_RenderDrawLine(renderer, circle.pos.x, circle.pos.y, leftChild->circle.pos.x, leftChild->circle.pos.y);
 			leftChild->draw(renderer, radius, getText);
 		}
-		if (rightChild) {
+		if (rightChild)
+		{
 			//SDL_RenderDrawLine(renderer, circle.pos.x, circle.pos.y, rightChild->circle.pos.x, rightChild->circle.pos.y);
 			rightChild->draw(renderer, radius, getText);
 		}
 	}
 
-	void drawLines2(SDL_Renderer* renderer) {
+	void drawLines2(SDL_Renderer *renderer)
+	{
 		SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
 		if (leftChild)
@@ -628,45 +624,35 @@ struct treeNode
 			SDL_RenderDrawLine(renderer, circle.pos.x, circle.pos.y, rightChild->circle.pos.x, rightChild->circle.pos.y);
 			rightChild->drawLines2(renderer);
 		}
-
 	}
 };
-
-
-
-
 
 template <class T>
 class avlTree
 {
 
 private:
-	treeNode<T>* root = nullptr;
+	treeNode<T> *root = nullptr;
 	unsigned no_of_data = 0;
 	uint32_t maxDepth;
 
 	vec2<float> dist = 75;
 	float radius = 25;
 
-
 	int insertBuffer = 0;
 	int deleteBuffer = 0;
 
-
 	bool done = false;
 
-	std::thread* thread = nullptr;
+	std::thread *thread = nullptr;
 
-	SDL_Texture* (*getText)(std::string, const std::string&, const int&, const uint32_t&, SDL_Renderer*);
-
+	SDL_Texture *(*getText)(std::string, const std::string &, const int &, const uint32_t &, SDL_Renderer *);
 
 	/// <summary>
 	/// for working with sleeptimes sliders
 	/// </summary>
 	const float flow = 0.2f;
 	const float fhigh = 5.0f;
-
-
 
 	void refreshroot()
 	{
@@ -675,16 +661,16 @@ private:
 	}
 
 public:
-	const SDL_Rect* viewport;
+	const SDL_Rect *viewport;
 
 	shared_data shared;
 
 	float sleeptime = 0.05;
 
+	avlTree(SDL_Texture *(*_getText)(std::string, const std::string &, const int &, const uint32_t &, SDL_Renderer *)) : getText(_getText) { shared.sleeptime = &sleeptime; }
 
-	avlTree(SDL_Texture* (*_getText)(std::string, const std::string&, const int&, const uint32_t&, SDL_Renderer*)) :getText(_getText) { shared.sleeptime = &sleeptime; }
-
-	void imguiDraw(appState& state, int& combo_selected, Window* window) {
+	void imguiDraw(appState &state, int &combo_selected, Window *window)
+	{
 		ImGui::SameLine();
 
 		ImGui::Text("debug");
@@ -696,7 +682,7 @@ public:
 		ImGui::SameLine();
 		if (ImGui::Button("Insert"))
 		{
-			SDL_Texture* letters = getText(std::to_string(insertBuffer), "segoeui", 15, 0, window->gRenderer);
+			SDL_Texture *letters = getText(std::to_string(insertBuffer), "segoeui", 15, 0, window->gRenderer);
 			thread = new std::thread(&avlTree::insert, this, insertBuffer, letters, std::ref(shared));
 			state = appState::Animating;
 			//insert(insertBuffer, letters);
@@ -709,7 +695,7 @@ public:
 		ImGui::SameLine();
 		if (ImGui::Button("Delete"))
 		{
-			SDL_Texture* letters = getText(std::to_string(insertBuffer), "segoeui", 15, 0, window->gRenderer);
+			SDL_Texture *letters = getText(std::to_string(insertBuffer), "segoeui", 15, 0, window->gRenderer);
 			thread = new std::thread(&avlTree::del, this, deleteBuffer, std::ref(shared));
 			state = appState::Animating;
 			//del(deleteBuffer, shared);
@@ -722,8 +708,6 @@ public:
 		ImGui::SameLine();
 		ImGui::PopItemWidth();
 
-
-
 		shared.nmutex.lock();
 		for (auto i : shared.nodes)
 		{
@@ -734,7 +718,7 @@ public:
 		shared.nmutex.unlock();
 	}
 
-	void draw(appState& state, SDL_Renderer* renderer)
+	void draw(appState &state, SDL_Renderer *renderer)
 	{
 		if (!root)
 			return;
@@ -798,7 +782,7 @@ public:
 	}
 
 	uint32_t size() { return no_of_data; }
-	friend std::ostream& operator<<(std::ostream& out, const avlTree<T>& t)
+	friend std::ostream &operator<<(std::ostream &out, const avlTree<T> &t)
 	{
 		treeAdd::indent_counter = 0;
 		out << *t.root << std::endl;
@@ -811,8 +795,7 @@ public:
 			delete root;
 	}
 
-
-	void insert(const T& data, SDL_Texture* letters, shared_data& shared)
+	void insert(const T &data, SDL_Texture *letters, shared_data &shared)
 	{
 
 		/*	shared.nmutex.lock();
@@ -824,7 +807,6 @@ public:
 			shared.nmutex.unlock();
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(5000));*/
-
 
 		if (root != nullptr)
 		{
@@ -855,13 +837,13 @@ public:
 		done = true;
 	}
 
-	void insertarray(const T* datas, size_t size, SDL_Renderer* renderer)
+	void insertarray(const T *datas, size_t size, SDL_Renderer *renderer)
 	{
 		if (root != nullptr)
 		{
 			for (size_t i = 0; i < size; i++)
 			{
-				SDL_Texture* letters = getText(std::to_string(datas[i]), "segoeui", 15, 0, renderer);
+				SDL_Texture *letters = getText(std::to_string(datas[i]), "segoeui", 15, 0, renderer);
 				root->addData2(datas[i], 0, maxDepth, letters, dist);
 				refreshroot();
 				no_of_data++;
@@ -881,7 +863,7 @@ public:
 
 			for (size_t i = 1; i < size; i++)
 			{
-				SDL_Texture* letters = getText(std::to_string(datas[i]), "segoeui", 15, 0, renderer);
+				SDL_Texture *letters = getText(std::to_string(datas[i]), "segoeui", 15, 0, renderer);
 				root->addData2(datas[i], 0, maxDepth, letters, dist);
 				refreshroot();
 				no_of_data++;
@@ -891,7 +873,8 @@ public:
 		refreshroot();
 	}
 
-	void refreshpos() {
+	void refreshpos()
+	{
 
 		root->circle.pos = vec2<float>(viewport->w / 2, 100);
 		SDL_QueryTexture(root->circle.letter, nullptr, nullptr, &root->circle.texPos.w, &root->circle.texPos.h);
@@ -902,12 +885,12 @@ public:
 		root->refreshPos(maxDepth, dist);
 	}
 
-	void del(const T& data, shared_data& shared)
+	void del(const T &data, shared_data &shared)
 	{
 		if (root == nullptr)
 			return;
 
-		treeNode<T>* toremove = root->search(data, shared);
+		treeNode<T> *toremove = root->search(data, shared);
 		if (!toremove)
 		{
 			std::cout << "data not in Tree" << std::endl;
@@ -923,9 +906,6 @@ public:
 		shared.nmutex.unlock();
 
 		std::this_thread::sleep_for(std::chrono::milliseconds((uint32_t)(*shared.sleeptime * 1000)));
-
-
-
 
 		if (toremove->getHeight() == 0)
 		{
@@ -989,7 +969,7 @@ public:
 			return;
 		}
 
-		treeNode<T>* smaller = toremove->leftChild->greatest(shared);
+		treeNode<T> *smaller = toremove->leftChild->greatest(shared);
 
 		*toremove->m_data = *smaller->m_data;
 		toremove->circle.letter = smaller->circle.letter;
@@ -1024,12 +1004,11 @@ public:
 
 		delete smaller;
 		done = true;
-
 	}
 
 	std::vector<T> getSortedArray()
 	{
-		std::vector<treeNode<T>*> currentHead;
+		std::vector<treeNode<T> *> currentHead;
 		currentHead.reserve(root->getHeight() + 1);
 		for (unsigned i = 0; i < currentHead.capacity(); i++)
 			currentHead.emplace_back(nullptr);
@@ -1039,5 +1018,4 @@ public:
 		root->smallest()->traverse(sortedData, nullptr, root->greatest());
 		return sortedData;
 	}
-
 };

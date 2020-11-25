@@ -1,4 +1,4 @@
-
+#pragma once
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -134,6 +134,11 @@ public:
 		balanceAbove(m_data.size() - 1);
 	}
 
+	void add(const T& data)
+	{
+		m_data.emplace_back(data);
+	}
+
 	bool empty() { return m_data.empty(); }
 
 	T pop()
@@ -147,7 +152,4 @@ public:
 		return ret;
 	}
 
-	void adjust(const T& value) {
-
-	}
 };

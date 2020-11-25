@@ -2,8 +2,15 @@
 
 #include <iostream>
 #include <cmath>
+#include <random>
 #include "SDL2/SDL_ttf.h"
 #include "SDL2/SDL2_gfxPrimitives.h"
+
+
+inline float dist(const float& x1, const float& y1, const float& x2, const float& y2) {
+	return sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+}
+
 
 template <class T>
 struct vec2
@@ -154,7 +161,7 @@ struct Circle
 };
 
 
-struct graphNode {
+struct gridGraphNode {
 	vec2<float> pos;
 	double F = std::numeric_limits<double>::infinity(), H = std::numeric_limits<double>::infinity(), G = std::numeric_limits<double>::infinity();
 	vec2<float> size, origin;
@@ -163,23 +170,22 @@ struct graphNode {
 	bool visited = false, isWall = false;
 
 
-	graphNode* parent=nullptr;
+	gridGraphNode* parent = nullptr;
 
 	void draw(SDL_Renderer* renderer, const bool& fill) {
 		if (fill)
 			boxColor(renderer, pos.x - origin.x, pos.y - origin.y, pos.x - origin.x + size.x, pos.y - origin.y + size.y, color);
 		else
 			rectangleColor(renderer, pos.x - origin.x, pos.y - origin.y, pos.x - origin.x + size.x, pos.y - origin.y + size.y, color);
-
 	}
 
-	void calculateHL(const graphNode* end, const double& weight) {
+	void calculateHL(const gridGraphNode* end, const double& weight) {
 		G = parent->G + weight;
 		H = vec2<float>::dist(pos, end->pos);
 		F = G + H;
 	}
 
-	void updateHL(const graphNode* end, graphNode* _parent, const double& weight) {
+	void updateHL(const gridGraphNode* end, gridGraphNode* _parent, const double& weight) {
 		double _G = _parent->G + weight;
 		H = vec2<float>::dist(pos, end->pos);
 		if (G == std::numeric_limits<float>::infinity())
@@ -194,10 +200,10 @@ struct graphNode {
 		F = G + H;
 	}
 
-	bool operator <(const graphNode& rhs) {
+	bool operator <(const gridGraphNode& rhs) {
 		return  (H + G) < (rhs.H + rhs.G);
 	}
-	bool operator >(const graphNode& rhs) {
+	bool operator >(const gridGraphNode& rhs) {
 		return  (H + G) > (rhs.H + rhs.G);
 	}
 };

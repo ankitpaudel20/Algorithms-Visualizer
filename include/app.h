@@ -7,7 +7,8 @@
 #include "window.h"
 #include "sort.h"
 #include "avl.h"
-#include "aStar.h"
+#include "gridGraph.h"
+#include "graph.h"
 #include "common.h"
 
 #include "glad/glad.h"
@@ -21,20 +22,22 @@
 class app
 {
 public:
-	app() :tree(getText)
+	app() : tree(getText)
 	{
-		m_window = new Window(600, 600);
-		astar = new graph(&m_window->viewport);
-
+		m_window = new Window(1300, 650);
+		grid = new gridGraph(&m_window->viewport);
+		joinGraph = new graph(&m_window->viewport);
 		sort.viewport = &m_window->viewport;
 		tree.viewport = &m_window->viewport;
+
+
 
 		sort.width = m_window->viewport.w / sort.N * 0.95;
 		sort.randomize(m_window->viewport);
 
 		if (TTF_Init() == -1)
 		{
-			printf("SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
+			printf("\nSDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
 		}
 
 		if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
@@ -44,6 +47,7 @@ public:
 		}
 		std::string path(SDL_GetBasePath());
 		//printf("%s\n", path.append(+"../../../assets/segoeuib.ttf").c_str());
+		//loadfont({ "segoeui", 5 }, path.append(+"../assets/segoeuib.ttf").c_str());
 		loadfont({ "segoeui", 5 }, path.append(+"../../../assets/segoeuib.ttf").c_str());
 
 		// Setup Dear ImGui context
@@ -58,7 +62,7 @@ public:
 
 		m_state = appState::Idle;
 
-		std::vector<int> datas{ 10, 50, -10, 60, 125, 40, 54, -6, 0, 25 ,135,45 };
+		std::vector<int> datas{ 10, 50, -10, 60, 125, 40, 54, -6, 0, 25, 135, 45 };
 		//std::vector<int> datas{ 10, 50, -10, 60,125,40 };
 		tree.insertarray(&datas[0], datas.size(), m_window->gRenderer);
 	}
@@ -87,9 +91,10 @@ public:
 
 		text_cache.clear();
 		TTF_Quit();
-		delete astar;
+		std::log(524.5f);
+		delete grid;
+		delete joinGraph;
 	}
-
 
 	typedef enum
 	{
@@ -105,8 +110,6 @@ public:
 
 		tree.shared.deltatime = &deltaTime;
 		bool listGrayed, stopButtonGrayed;
-		bool LMBheld = false;
-		bool RMBheld = false;
 		int mouseX, mouseY;
 		Uint8 buttons = 0x00;
 
@@ -120,22 +123,28 @@ public:
 				switch (evnt.type)
 				{
 				case SDL_MOUSEBUTTONDOWN:
-					if (evnt.button.button == SDL_BUTTON_LEFT) {
-						LMBheld = true;
+					SDL_GetMouseState(&mouseX, &mouseY);
+					if (evnt.button.button == SDL_BUTTON_LEFT)
+					{
 						buttons |= LMB_held;
+						if (combo_selected > 11)
+							if (m_state != appState::Animating)
+								joinGraph->select(mouseX, mouseY);
 					}
-					else {
-						RMBheld = true;
+					else
+					{
 						buttons |= RMB_held;
+
 					}
+
 					break;
 				case SDL_MOUSEBUTTONUP:
-					if (evnt.button.button == SDL_BUTTON_LEFT) {
-						LMBheld = false;
+					if (evnt.button.button == SDL_BUTTON_LEFT)
+					{
 						buttons ^= LMB_held;
 					}
-					else {
-						RMBheld = false;
+					else
+					{
 						buttons ^= RMB_held;
 					}
 					break;
@@ -156,14 +165,13 @@ public:
 						break;
 					case SDLK_SPACE:
 						SDL_GetMouseState(&mouseX, &mouseY);
-						astar->color(mouseX, mouseY, buttons);
+						grid->color(mouseX, mouseY, buttons);
 						break;
 					case SDLK_r:
 						if (evnt.key.keysym.mod & KMOD_CTRL)
-							astar->init();
+							grid->init();
 						else
-							astar->reset();
-
+							grid->reset();
 						break;
 					}
 					break;
@@ -190,7 +198,7 @@ public:
 						sort.width = evnt.window.data1 / sort.N * 0.95;
 						sort.spacing = (float)m_window->viewport.w / ((sort.N - 1) * 2);
 						tree.refreshpos();
-						astar->refreshSize();
+						grid->refreshSize();
 						break;
 					case SDL_WINDOWEVENT_MINIMIZED:
 						SDL_Log("Window %d minimized", evnt.window.windowID);
@@ -207,26 +215,22 @@ public:
 				default:
 					break;
 				}
-
 			}
-
 
 			if (combo_selected < 8)
 				sort.Draw(m_state, m_window->gRenderer);
-			else if (combo_selected == 8) {
+			else if (combo_selected == 8)
 				tree.draw(m_state, m_window->gRenderer);
+			else if (combo_selected < 12)
+			{
+				grid->Draw(m_state, m_window->gRenderer);
+				SDL_GetMouseState(&mouseX, &mouseY);
+				grid->color(mouseX, mouseY, buttons);
 			}
 			else {
-				astar->Draw(m_state, m_window->gRenderer);
-				SDL_GetMouseState(&mouseX, &mouseY);
-				astar->color(mouseX, mouseY, buttons);
+				joinGraph->Draw(m_state, m_window->gRenderer);
 			}
 
-
-
-			//rectangle rect
-
-			//rectangleColor(m_window->gRenderer, 100, 200, 300, 400, 0xFFFFFFFF);
 
 
 			//IMGUI rendering
@@ -271,12 +275,17 @@ public:
 						{
 							sort.imguiDraw(m_state, combo_selected, m_window);
 						}
-						else if (combo_selected == 8) {
+						else if (combo_selected == 8)
+						{
 							tree.imguiDraw(m_state, combo_selected, m_window);
+						}
+						else if (combo_selected < 12)
+						{
+							grid->imguiDraw(m_state, combo_selected, m_window);
 						}
 						else
 						{
-							astar->imguiDraw(m_state, combo_selected, m_window);
+							joinGraph->imguiDraw(m_state, combo_selected, m_window);
 						}
 
 						if (listGrayed)
@@ -290,7 +299,7 @@ public:
 					if (combo_selected < 8)
 					{
 						const float flow = 0.0f;
-						const float fhigh = 0.3f;
+						const float fhigh = 0.15f;
 						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sort.sleeptime, &flow, &fhigh);
 					}
 					else if (combo_selected == 8)
@@ -299,11 +308,17 @@ public:
 						const float fhigh = 2.0f;
 						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &tree.sleeptime, &flow, &fhigh);
 					}
-					else if (combo_selected > 8)
+					else if (combo_selected < 12)
 					{
 						const float flow = 0.0f;
 						const float fhigh = 0.15f;
-						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &astar->sleeptime, &flow, &fhigh);
+						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &grid->sleeptime, &flow, &fhigh);
+					}
+					else
+					{
+						const float flow = 0.0f;
+						const float fhigh = 0.5f;
+						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &joinGraph->sleeptime, &flow, &fhigh);
 					}
 
 					ImGui::PopItemWidth();
@@ -327,8 +342,6 @@ public:
 			glClear(GL_COLOR_BUFFER_BIT);
 		}
 	}
-
-public:
 
 	static SDL_Texture* createTextTexture(const std::string& fontname, std::string text, const int& size, const Uint32& wrap, SDL_Renderer* renderer)
 	{
@@ -354,6 +367,7 @@ public:
 		SDL_FreeSurface(surface);
 		return tex;
 	}
+public:
 
 	static void loadfont(const fontinfo& info, const std::string& path)
 	{
@@ -363,7 +377,7 @@ public:
 
 			if (font_cache[info] == nullptr)
 			{
-				printf("error loading font %s : %s", path.c_str(), TTF_GetError());
+				printf("\nerror loading font %s : %s", path.c_str(), TTF_GetError());
 				return;
 			}
 		}
@@ -410,8 +424,8 @@ public:
 
 	sortingClass sort;
 	avlTree<int> tree;
-	graph* astar = nullptr;
-
+	gridGraph* grid = nullptr;
+	graph* joinGraph = nullptr;
 
 	float deltaTime = 0;
 
@@ -429,12 +443,17 @@ public:
 		"avl Tree",
 		"A Star",
 		"BestFirst",
-		"Dijkstra" };
+		"Dijkstra",
+		"Prims Algorithm",
+		"Kruskal's Algorithm"
+	};
 
-	int combo_selected = 9;
+	int combo_selected = 8;
 };
 
 std::map<std::string, SDL_Texture*> app::text_cache;
 std::map<fontinfo, TTF_Font*> app::font_cache;
 std::map<std::string, std::string> app::font_path;
+
+
 #endif // APP_H

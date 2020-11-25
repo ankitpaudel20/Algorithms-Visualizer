@@ -21,7 +21,7 @@ void sortingClass::selectionsort()
 	sorted = true;
 }
 
-void sortingClass::qsort(const size_t& start_index, const size_t& end_index)
+void sortingClass::qsort(const size_t &start_index, const size_t &end_index)
 {
 	if (end_index == start_index + 1)
 	{
@@ -49,7 +49,7 @@ void sortingClass::qsort(const size_t& start_index, const size_t& end_index)
 				for (right_iterator; right_iterator <= end_index; right_iterator++)
 				{
 					if (cmp(pivot, right_iterator))
-						// if (m_data[right_iterator] < m_data[pivot])
+					// if (m_data[right_iterator] < m_data[pivot])
 					{
 						swap(left_iterator, right_iterator);
 						right_iterator += (right_iterator != end_index);
@@ -102,10 +102,10 @@ void sortingClass::quicksort()
 	sorted = true;
 }
 
-void sortingClass::merge(uint32_t* arr, const size_t& a, const size_t& m, const size_t& b)
+void sortingClass::merge(uint32_t *arr, const size_t &a, const size_t &m, const size_t &b)
 {
 	auto size = sizeof(uint32_t);
-	uint32_t* tmp = new uint32_t[b - a + 1];
+	uint32_t *tmp = new uint32_t[b - a + 1];
 	size_t i = a, j = m + 1, k = 0;
 	while (i < m + 1 && j < b + 1)
 	{
@@ -126,7 +126,7 @@ void sortingClass::merge(uint32_t* arr, const size_t& a, const size_t& m, const 
 	}
 
 	// memcpy(arr + a, tmp, (b - a + 1) * size);
-	int time = sleeptime * 500;
+	int time = sleeptime * 1000;
 	for (i = a, j = 0; j <= b - a; i++, j++)
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(time));
@@ -136,7 +136,7 @@ void sortingClass::merge(uint32_t* arr, const size_t& a, const size_t& m, const 
 	delete[] tmp;
 }
 
-void sortingClass::mergesortSubroutine(const size_t& a, const size_t& b)
+void sortingClass::mergesortSubroutine(const size_t &a, const size_t &b)
 {
 	if (b <= a)
 		return;
@@ -231,8 +231,6 @@ void sortingClass::shellsort2()
 	sorted = true;
 }
 
-
-
 void sortingClass::shellsort()
 {
 	for (int gap = N / 2; gap > 0; gap /= 2)
@@ -247,13 +245,6 @@ void sortingClass::shellsort()
 	sorted = true;
 }
 
-
-
-
-
-
-
-
 void sortingClass::heapsort()
 {
 	heapify();
@@ -265,13 +256,13 @@ void sortingClass::heapsort()
 	sorted = true;
 }
 
-void sortingClass::balanceBelow(const size_t& size, const unsigned& index)
+void sortingClass::balanceBelow(const size_t &size, const unsigned &index)
 {
 	if (!hasleft(index, size))
 		return;
 	if (hasright(index, size))
 	{
-		const unsigned& greater = cmp(lc(index), rc(index)) ? lc(index) : rc(index);
+		const unsigned &greater = cmp(lc(index), rc(index)) ? lc(index) : rc(index);
 		if (cmp(greater, index))
 		{
 			swap(greater, index);
@@ -287,7 +278,6 @@ void sortingClass::balanceBelow(const size_t& size, const unsigned& index)
 		}
 	}
 }
-
 
 void sortingClass::heapify()
 {
