@@ -73,6 +73,11 @@ public:
 				grid.push_back(rect);
 			}
 		}
+
+		startx = get(0, 0).pos.x - get(0, 0).origin.x;
+		starty = get(0, 0).pos.y - get(0, 0).origin.y;
+		endx = get(gridSize.x - 1, 0).pos.x + get(gridSize.x - 1, 0).origin.x;
+		endy = get(0, gridSize.y - 1).pos.y + get(0, gridSize.y - 1).origin.y;
 	}
 
 	void expandNode(gridGraphNode* node, const vec2<int>& delpos, const float& weight) {
