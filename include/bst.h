@@ -285,8 +285,6 @@ struct bstNode
 
 	bstNode<T>* search(const T& data)
 	{
-
-
 		if (*m_data == data)
 			return this;
 		else if (data > * m_data)
@@ -408,16 +406,16 @@ public:
 		no_of_data++;
 	}
 
-	void del(const T& data)
+	bool del(const T& data)
 	{
 		if (root == nullptr)
-			return;
+			return false;
 
 		bstNode<T>* toremove = root->search(data);
 		if (!toremove)
 		{
-			std::cout << "data not in Tree" << std::endl;
-			return;
+			//std::cout << "data not in Tree" << std::endl;
+			return false;
 		}
 		no_of_data--;
 
@@ -447,7 +445,7 @@ public:
 			toremove->parent = nullptr;
 			delete toremove;
 
-			return;
+			return true;
 		}
 
 		if (!toremove->leftChild)
@@ -477,7 +475,7 @@ public:
 
 			delete toremove;
 
-			return;
+			return true;
 		}
 
 		bstNode<T>* smaller = toremove->leftChild->greatest();
@@ -506,6 +504,11 @@ public:
 
 		smaller->parent = nullptr;
 		delete smaller;
+		return true;
+	}
+
+	bool find(const T& data) {
+		return root->search(data);
 	}
 
 	std::vector<T> getSortedArray()

@@ -6,7 +6,7 @@
 #include "SDL2/SDL.h"
 #include "SDL2/SDL2_gfxPrimitives.h"
 
-#include "linked.h"
+#include "doublyLinked.h"
 #include "bst.h"
 
 std::vector<float> random_generator_float(float start, float end, uint32_t count)
@@ -34,8 +34,10 @@ struct graphNode {
 	vec2<float> pos, origin;
 	float radius;
 	Uint32 color;
-	std::vector<std::pair<graphNode*, Uint32>> childs;
-	std::vector<std::pair<graphNode*, Uint32>> parents;
+
+	int forest = -1;
+	//std::vector<std::pair<graphNode*, Uint32>> childs;
+	//std::vector<std::pair<graphNode*, Uint32>> parents;
 };
 
 
@@ -52,7 +54,7 @@ class graph {
 	std::vector<graphNode> nodes;
 	std::vector<line> lines;
 	graphNode* start = nullptr;
-	int N = 50, newN;
+	int N = 5, newN;
 	Uint32 radius;
 
 	std::mutex lineMutex;
@@ -115,9 +117,9 @@ public:
 				start = &i;
 				i.color = 0xFF0000FF;
 				break;
+				lines.clear();
 			}
 		}
-		lines.clear();
 	}
 
 	void Draw(appState& state, SDL_Renderer* renderer) {
@@ -294,33 +296,66 @@ public:
 				queue.add(graphNodePair(&nodes[i], &nodes[j]));
 			}
 		}
+
 		queue.remakeHeap();
 
-		//std::vector<graphNode*> notVisited;
-		bst<graphNode*> nVisited;
-
-		//notVisited.reserve(nodes.size());
 
 		for (size_t i = 0; i < nodes.size(); i++)
 		{
-
-			//notVisited.push_back(&nodes[i]);
-			nVisited.insert(&nodes[i]);
-
+			nodes[i].forest = -1;
 		}
+		int id = 0;
 
-		while (nVisited.size()) {
+		std::vector<linkedList<graphNode*>> trees;
+
+		while (lines.size() < nodes.size() - 1) {
 			auto min = queue.pop();
-			time = sleeptime * 1000;
-			std::this_thread::sleep_for(std::chrono::milliseconds(time / 2));
 
-			lineMutex.lock();
-			lines.emplace_back(min.l->pos.x, min.l->pos.y, min.r->pos.x, min.r->pos.y);
-			lineMutex.unlock();
+			if ((min.l->forest != min.r->forest) || (min.l->forest == -1 && min.r->forest == -1))
+			{
+				time = sleeptime * 1000;
+				std::this_thread::sleep_for(std::chrono::milliseconds(time / 2));
+				lineMutex.lock();
+				lines.emplace_back(min.l->pos.x, min.l->pos.y, min.r->pos.x, min.r->pos.y);
+				lineMutex.unlock();
+				std::this_thread::sleep_for(std::chrono::milliseconds(time / 2));
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(time / 2));
-			nVisited.del(min.l);
-			nVisited.del(min.r);
+				if (min.l->forest != -1)
+				{
+					if (min.r->forest != -1)
+					{
+						auto it = trees[min.l->forest].itLast();
+						trees[min.l->forest].mergeList(trees[min.r->forest]);
+						for (it; it != trees[min.l->forest].end(); it++)
+							it.operator*()->forest = min.l->forest;
+					}
+					else
+					{
+						min.r->forest = min.l->forest;
+						trees[min.l->forest].insertLast(min.r);
+					}
+				}
+				else if (min.r->forest != -1) {
+
+					if (min.l->forest != -1)
+					{
+						auto it = trees[min.r->forest].itLast();
+						trees[min.r->forest].mergeList(trees[min.l->forest]);
+						for (it; it != trees[min.r->forest].end(); it++)
+							it.operator*()->forest = min.r->forest;
+					}
+					else
+					{
+						min.l->forest = min.r->forest;
+						trees[min.r->forest].insertLast(min.l);
+					}
+				}
+				else
+				{
+					min.r->forest = min.l->forest = id++;
+					trees.emplace_back(linkedList<graphNode*>{ min.r, min.l });
+				}
+			}
 		}
 
 		done = true;

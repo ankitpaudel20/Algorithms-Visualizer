@@ -143,8 +143,10 @@ public:
 
 	T pop()
 	{
-		if (m_data.size() == 0)
+		if (m_data.size() == 0) {
+			printf("exception thrown empty\n");
 			throw heapException(heapError::HEAP_EMPTY);
+		}
 		swap(m_data[0], m_data[m_data.size() - 1]);
 		auto ret = m_data.back();
 		m_data.pop_back();

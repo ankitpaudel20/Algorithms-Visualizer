@@ -448,7 +448,7 @@ public:
 		"Kruskal's Algorithm"
 	};
 
-	int combo_selected = 8;
+	int combo_selected = 13;
 };
 
 std::map<std::string, SDL_Texture*> app::text_cache;
