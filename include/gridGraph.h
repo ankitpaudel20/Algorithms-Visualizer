@@ -437,7 +437,7 @@ public:
 	void Draw(appState& state, SDL_Renderer* renderer) {
 		for (auto i : grid)
 			i.draw(renderer, fill);
-
+		glad_glLineWidth(1);
 		if (fill)
 		{
 			vlineRGBA(renderer, get(0, 0).pos.x - get(0, 0).origin.x, get(0, 0).pos.y - get(0, 0).origin.y, get(0, gridSize.y - 1).pos.y + get(0, gridSize.y - 1).origin.y, 0, 0, 0, 255);
@@ -451,6 +451,7 @@ public:
 				hlineRGBA(renderer, get(0, i).pos.x - get(0, i).origin.x, get(gridSize.x - 1, i).pos.x + get(gridSize.x - 1, i).origin.x, get(0, i).pos.y + get(0, i).origin.y, 0, 0, 0, 255);
 			}
 		}
+
 		for (auto& i : grid)
 		{
 			if (i.color == 0xFFFFFFFF || i.color == 0x00ff00ff)

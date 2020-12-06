@@ -223,6 +223,7 @@ public:
 				tree.draw(m_state, m_window->gRenderer);
 			else if (combo_selected < 12)
 			{
+				grid->refreshSize();
 				grid->Draw(m_state, m_window->gRenderer);
 				SDL_GetMouseState(&mouseX, &mouseY);
 				grid->color(mouseX, mouseY, buttons);
