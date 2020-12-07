@@ -54,7 +54,7 @@ class graph {
 	std::vector<graphNode> nodes;
 	std::vector<line> lines;
 	graphNode* start = nullptr;
-	int N = 5, newN;
+	int N = 80, newN;
 	Uint32 radius;
 
 	std::mutex lineMutex;
@@ -66,7 +66,7 @@ class graph {
 
 public:
 	const SDL_Rect* viewport;
-	float sleeptime = 0.5;
+	float sleeptime = 0.15;
 
 	graph(const SDL_Rect* _viewport) :viewport(_viewport) {
 		radius = 4;
@@ -188,17 +188,13 @@ public:
 		ImGui::SameLine();
 		if (ImGui::Button("Solve"))
 		{
-			if (start) {
-
-			}
-
 			switch (combo_selected)
 			{
-			case 12:
+			case 11:
 				thread = new std::thread(&graph::prims, this);
 				//prims();
 				break;
-			case 13:
+			case 12:
 				thread = new std::thread(&graph::kruskal, this);
 				break;
 			default:
@@ -209,8 +205,10 @@ public:
 	}
 
 	void prims() {
-
-		start = &nodes[0];
+		if (!start)
+		{
+			start = &nodes[0];
+		}
 
 		lines.clear();
 		int time = sleeptime * 1000;

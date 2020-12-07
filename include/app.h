@@ -134,7 +134,6 @@ public:
 					else
 					{
 						buttons |= RMB_held;
-
 					}
 
 					break;
@@ -219,9 +218,9 @@ public:
 
 			if (combo_selected < 8)
 				sort.Draw(m_state, m_window->gRenderer);
-			else if (combo_selected == 8)
-				tree.draw(m_state, m_window->gRenderer);
-			else if (combo_selected < 12)
+			/*	else if (combo_selected == 8)
+					tree.draw(m_state, m_window->gRenderer);*/
+			else if (combo_selected < 11)
 			{
 				grid->refreshSize();
 				grid->Draw(m_state, m_window->gRenderer);
@@ -276,11 +275,11 @@ public:
 						{
 							sort.imguiDraw(m_state, combo_selected, m_window);
 						}
-						else if (combo_selected == 8)
+						/*else if (combo_selected == 8)
 						{
 							tree.imguiDraw(m_state, combo_selected, m_window);
-						}
-						else if (combo_selected < 12)
+						}*/
+						else if (combo_selected < 11)
 						{
 							grid->imguiDraw(m_state, combo_selected, m_window);
 						}
@@ -303,13 +302,13 @@ public:
 						const float fhigh = 0.15f;
 						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sort.sleeptime, &flow, &fhigh);
 					}
-					else if (combo_selected == 8)
+					/*else if (combo_selected == 8)
 					{
 						const float flow = 0.1f;
 						const float fhigh = 2.0f;
 						ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &tree.sleeptime, &flow, &fhigh);
-					}
-					else if (combo_selected < 12)
+					}*/
+					else if (combo_selected < 11)
 					{
 						const float flow = 0.0f;
 						const float fhigh = 0.15f;
@@ -441,7 +440,6 @@ public:
 		"shell sort",
 		"shell sort2",
 		"heap sort",
-		"avl Tree",
 		"A Star",
 		"BestFirst",
 		"Dijkstra",
@@ -449,7 +447,7 @@ public:
 		"Kruskal's Algorithm"
 	};
 
-	int combo_selected = 13;
+	int combo_selected = 11;
 };
 
 std::map<std::string, SDL_Texture*> app::text_cache;
