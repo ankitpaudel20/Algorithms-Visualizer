@@ -122,7 +122,7 @@ public:
 		}
 	}
 
-	void Draw(appState& state, SDL_Renderer* renderer) {
+	void Draw(appState& state, SDL_Renderer* renderer, std::chrono::steady_clock::time_point& stop) {
 		if (!lines.empty())
 		{
 
@@ -144,6 +144,7 @@ public:
 		{
 			if (done)
 			{
+				stop = std::chrono::high_resolution_clock::now();
 				if (thread->joinable())
 					thread->join();
 				delete thread;
@@ -166,7 +167,7 @@ public:
 		}
 	}
 
-	void imguiDraw(appState& state, int& combo_selected, Window* window) {
+	void imguiDraw(appState& state, int& combo_selected, Window* window, std::chrono::steady_clock::time_point start) {
 		ImGui::SameLine();
 		ImGui::PushItemWidth((float)window->wwidth / 8);
 		ImGui::InputInt(" | ##num", &newN);
@@ -201,6 +202,7 @@ public:
 				break;
 			}
 			state = appState::Animating;
+			start = std::chrono::high_resolution_clock::now();
 		}
 	}
 

@@ -12,6 +12,7 @@ inline float dist(const float& x1, const float& y1, const float& x2, const float
 }
 
 
+
 template <class T>
 struct vec2
 {

@@ -72,7 +72,7 @@ struct sortingClass
 
 	}
 
-	void Draw(appState& state, SDL_Renderer* renderer)
+	void Draw(appState& state, SDL_Renderer* renderer, std::chrono::steady_clock::time_point& stop)
 	{
 		SDL_RenderSetViewport(renderer, viewport);
 
@@ -122,6 +122,7 @@ struct sortingClass
 			}
 			else
 			{
+				stop = std::chrono::high_resolution_clock::now();
 				if (thread->joinable())
 					thread->join();
 				delete thread;
@@ -136,7 +137,7 @@ struct sortingClass
 		//SDL_Rect rect{ width, 0, viewport.w - 2 * width, viewport.h };
 	}
 
-	void imguiDraw(appState& state, int& combo_selected, Window* window) {
+	void imguiDraw(appState& state, int& combo_selected, Window* window, std::chrono::steady_clock::time_point& start) {
 		ImGui::SameLine();
 		ImGui::PushItemWidth((float)window->wwidth / 13);
 		ImGui::SameLine();
@@ -183,20 +184,18 @@ struct sortingClass
 				break;
 			case 5:
 				thread = new std::thread(&sortingClass::shellsort, this);
-				// shellsort();
 				break;
 			case 6:
 				thread = new std::thread(&sortingClass::shellsort2, this);
-				// shellsort();
 				break;
 			case 7:
 				thread = new std::thread(&sortingClass::heapsort, this);
-				//heapsort();
 				break;
 			default:
 				break;
 			}
 			state = appState::Animating;
+			start = std::chrono::high_resolution_clock::now();
 		}
 
 		/*	ImGui::PushItemWidth(200);

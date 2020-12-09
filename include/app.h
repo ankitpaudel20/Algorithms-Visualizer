@@ -106,6 +106,7 @@ public:
 
 	void run()
 	{
+		std::chrono::steady_clock::time_point  start = std::chrono::high_resolution_clock::now();
 		SDL_ShowWindow(m_window->gWindow);
 
 		tree.shared.deltatime = &deltaTime;
@@ -216,19 +217,19 @@ public:
 				}
 			}
 
+
+
 			if (combo_selected < 8)
-				sort.Draw(m_state, m_window->gRenderer);
-			/*	else if (combo_selected == 8)
-					tree.draw(m_state, m_window->gRenderer);*/
+				sort.Draw(m_state, m_window->gRenderer, end);
 			else if (combo_selected < 11)
 			{
 				grid->refreshSize();
-				grid->Draw(m_state, m_window->gRenderer);
+				grid->Draw(m_state, m_window->gRenderer, end);
 				SDL_GetMouseState(&mouseX, &mouseY);
 				grid->color(mouseX, mouseY, buttons);
 			}
 			else {
-				joinGraph->Draw(m_state, m_window->gRenderer);
+				joinGraph->Draw(m_state, m_window->gRenderer, end);
 			}
 
 
@@ -273,7 +274,7 @@ public:
 
 						if (combo_selected < 8)
 						{
-							sort.imguiDraw(m_state, combo_selected, m_window);
+							sort.imguiDraw(m_state, combo_selected, m_window, start);
 						}
 						/*else if (combo_selected == 8)
 						{
@@ -281,11 +282,11 @@ public:
 						}*/
 						else if (combo_selected < 11)
 						{
-							grid->imguiDraw(m_state, combo_selected, m_window);
+							grid->imguiDraw(m_state, combo_selected, m_window, start);
 						}
 						else
 						{
-							joinGraph->imguiDraw(m_state, combo_selected, m_window);
+							joinGraph->imguiDraw(m_state, combo_selected, m_window, start);
 						}
 
 						if (listGrayed)
@@ -322,7 +323,8 @@ public:
 					}
 
 					ImGui::PopItemWidth();
-
+					auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() * 1e-9;
+					ImGui::Text("Time taken for previous operation: %f", time > 0 ? time : 0);
 					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
 					ImGui::SetWindowSize(ImVec2(m_window->wwidth, ImGui::GetWindowSize().y));
@@ -438,7 +440,7 @@ public:
 		"insertion sort",
 		"bubble sort",
 		"shell sort",
-		"shell sort2",
+		"shell sort with Knuth's sequence",
 		"heap sort",
 		"A Star",
 		"BestFirst",
@@ -447,7 +449,10 @@ public:
 		"Kruskal's Algorithm"
 	};
 
-	int combo_selected = 11;
+	int combo_selected = 8;
+
+	std::chrono::steady_clock::time_point  start = std::chrono::high_resolution_clock::now();
+	std::chrono::steady_clock::time_point  end = std::chrono::high_resolution_clock::now();
 };
 
 std::map<std::string, SDL_Texture*> app::text_cache;

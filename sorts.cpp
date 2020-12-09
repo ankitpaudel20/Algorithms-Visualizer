@@ -21,7 +21,7 @@ void sortingClass::selectionsort()
 	sorted = true;
 }
 
-void sortingClass::qsort(const size_t &start_index, const size_t &end_index)
+void sortingClass::qsort(const size_t& start_index, const size_t& end_index)
 {
 	if (end_index == start_index + 1)
 	{
@@ -49,7 +49,7 @@ void sortingClass::qsort(const size_t &start_index, const size_t &end_index)
 				for (right_iterator; right_iterator <= end_index; right_iterator++)
 				{
 					if (cmp(pivot, right_iterator))
-					// if (m_data[right_iterator] < m_data[pivot])
+						// if (m_data[right_iterator] < m_data[pivot])
 					{
 						swap(left_iterator, right_iterator);
 						right_iterator += (right_iterator != end_index);
@@ -102,10 +102,10 @@ void sortingClass::quicksort()
 	sorted = true;
 }
 
-void sortingClass::merge(uint32_t *arr, const size_t &a, const size_t &m, const size_t &b)
+void sortingClass::merge(uint32_t* arr, const size_t& a, const size_t& m, const size_t& b)
 {
 	auto size = sizeof(uint32_t);
-	uint32_t *tmp = new uint32_t[b - a + 1];
+	uint32_t* tmp = new uint32_t[b - a + 1];
 	size_t i = a, j = m + 1, k = 0;
 	while (i < m + 1 && j < b + 1)
 	{
@@ -136,7 +136,7 @@ void sortingClass::merge(uint32_t *arr, const size_t &a, const size_t &m, const 
 	delete[] tmp;
 }
 
-void sortingClass::mergesortSubroutine(const size_t &a, const size_t &b)
+void sortingClass::mergesortSubroutine(const size_t& a, const size_t& b)
 {
 	if (b <= a)
 		return;
@@ -203,16 +203,12 @@ void sortingClass::radixsort()
 
 void sortingClass::insertionsort()
 {
-	size_t i, j, k;
-	uint32_t temp;
+	size_t i, j;
 	for (i = 1; i < m_data.size(); i++)
 	{
-		for (j = i - 1; j >= 0 && j < m_data.size(); j--)
+		for (j = i - 1; j >= 0 && j < m_data.size() && cmp(j, j + 1); j--)
 		{
-			if (cmp(j, j + 1))
-				swap(j, j + 1);
-			else
-				break;
+			swap(j, j + 1);
 		}
 	}
 	sorted = true;
@@ -220,25 +216,32 @@ void sortingClass::insertionsort()
 
 void sortingClass::shellsort2()
 {
-	size_t i, j, k;
-	// int gap = (m_data.size() - 1) / 2;
-	for (int gap = (m_data.size()) / 2; gap > 0; gap = gap / 2)
-		for (i = 0; i < gap; i = i + 1)
-			for (j = i + gap; j < m_data.size(); j += gap)
-				for (k = j - gap; k >= 0 && k < m_data.size() && cmp(k, k + gap); k -= gap)
-					swap(k, k + gap);
+	std::vector<uint32_t> k;
+	k.push_back(1);
+	while (k.back() < m_data.size())
+	{
+		k.push_back(3 * k.back() + 1);
+	}
+	k.pop_back();
 
+	size_t i, j;
+
+	for (auto gap = k.rbegin(); gap != k.rend(); gap++) {
+		for (i = *gap; i < m_data.size(); i++) {
+			for (j = i; j >= *gap && j < m_data.size() && cmp(j - *gap, j); j -= *gap)
+			{
+				swap(j, j - *gap);
+			}
+		}
+	}
 	sorted = true;
 }
 
 void sortingClass::shellsort()
 {
-	for (int gap = N / 2; gap > 0; gap /= 2)
-	{
-		for (int i = gap; i < N; i += 1)
-		{
-			int j;
-			for (j = i; j >= gap && cmp(j - gap, j); j -= gap)
+	for (int gap = N / 2; gap > 0; gap /= 2) {
+		for (int i = gap; i < N; i += 1) {
+			for (int j = i; j >= gap && cmp(j - gap, j); j -= gap)
 				swap(j, j - gap);
 		}
 	}
@@ -256,13 +259,13 @@ void sortingClass::heapsort()
 	sorted = true;
 }
 
-void sortingClass::balanceBelow(const size_t &size, const unsigned &index)
+void sortingClass::balanceBelow(const size_t& size, const unsigned& index)
 {
 	if (!hasleft(index, size))
 		return;
 	if (hasright(index, size))
 	{
-		const unsigned &greater = cmp(lc(index), rc(index)) ? lc(index) : rc(index);
+		const unsigned& greater = cmp(lc(index), rc(index)) ? lc(index) : rc(index);
 		if (cmp(greater, index))
 		{
 			swap(greater, index);

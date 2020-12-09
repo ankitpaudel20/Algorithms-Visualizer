@@ -1,8 +1,10 @@
 #pragma once
 #include "common.h"
 #include "heap.h"
+#include "stack.h"
 
 #include<vector>
+#include<stack>
 #include "SDL2/SDL.h"
 #include "SDL2/SDL2_gfxPrimitives.h"
 
@@ -10,12 +12,10 @@ typedef enum {
 	NORMAL = 0x0001, WALL = 0x0002, START = 0x0004, END = 0x0008
 } nodeProps;
 
-
-
 class gridGraph {
 	std::vector<gridGraphNode> grid;
 	vec2<int> gridSize, newSize;
-	float rectsize = 20;
+	float rectsize = 10;
 	bool fill = true;
 	bool diagonal = false;
 	heap<gridGraphNode*> check_queue;
@@ -29,16 +29,12 @@ class gridGraph {
 	bool done = false;
 
 
+
 	const SDL_Rect* viewport;
 	inline gridGraphNode& get(const Uint32& x, const Uint32& y) { return grid[x + y * gridSize.x]; }
-	inline gridGraphNode& get(const vec2<float>& pos) { return grid[(Uint32)pos.x / rectsize + (Uint32)pos.y / rectsize * gridSize.x]; }
-
-	//bool cmp(const gridGraphNode* lhs, const gridGraphNode* rhs) { return lhs->H + lhs->G < rhs->H + rhs->G; }
-	/*bool cmp(const vec2<float>& lhs, const vec2<float>& rhs) {
-		auto L = get(lhs);
-		auto R = get(rhs);
-		return (L.H + L.G) < (R.H + R.G);
-	}*/
+	inline gridGraphNode& get(const vec2<float>& pos) {
+		return grid[((Uint32)pos.x - startx) / rectsize + ((Uint32)pos.y - starty) / rectsize * gridSize.x];
+	}
 
 public:
 	float sleeptime = 0.05;
@@ -63,7 +59,7 @@ public:
 		end = nullptr;
 		for (size_t i = 0; i < gridSize.y; i++) {
 			for (size_t j = 0; j < gridSize.x; j++) {
-				rect.color = 0xFFFF00FF;
+				rect.color = 0x706AFFFF;
 				rect.size = vec2<float>(rectsize);
 				rect.origin = vec2<float>(rectsize / 2);
 				rect.pos = vec2<float>((j + 1) * rectsize + viewport->x, (i + 1) * rectsize + viewport->y);
@@ -78,6 +74,114 @@ public:
 		starty = get(0, 0).pos.y - get(0, 0).origin.y;
 		endx = get(gridSize.x - 1, 0).pos.x + get(gridSize.x - 1, 0).origin.x;
 		endy = get(0, gridSize.y - 1).pos.y + get(0, gridSize.y - 1).origin.y;
+	}
+
+	std::vector<gridGraphNode*> getneighbours(const gridGraphNode* const curr) {
+		std::vector<gridGraphNode*> ret;
+		int x, y;
+
+		if (curr->pos.x - 2 * rectsize > startx) {
+			x = (curr->pos.x - 2 * rectsize - startx) / rectsize;
+			y = (curr->pos.y - starty) / rectsize;
+			if (!get(x, y).visited)
+			{
+				ret.push_back(&get(x, y));
+			}
+		}
+
+		if (curr->pos.x + 2 * rectsize < endx) {
+
+			x = (curr->pos.x + 2 * rectsize - startx) / rectsize;
+			y = (curr->pos.y - starty) / rectsize;
+			if (!get(x, y).visited)
+			{
+				ret.push_back(&get(x, y));
+			}
+		}
+
+		if (curr->pos.y - 2 * rectsize > starty) {
+			x = (curr->pos.x - startx) / rectsize;
+			y = (curr->pos.y - 2 * rectsize - starty) / rectsize;
+			if (!get(x, y).visited)
+			{
+				ret.push_back(&get(x, y));
+			}
+		}
+
+		if (curr->pos.y + 2 * rectsize < endy) {
+			x = (curr->pos.x - startx) / rectsize;
+			y = (curr->pos.y + 2 * rectsize - starty) / rectsize;
+			if (!get(x, y).visited)
+			{
+				ret.push_back(&get(x, y));
+			}
+		}
+		return ret;
+	}
+
+	void genmaze() {
+
+
+		for (auto& i : grid) {
+			i.isWall = false;
+			i.color = 0x706AFFFF;
+		}
+
+		gridGraphNode* curr = &grid[0];
+		std::vector<gridGraphNode*> visited;
+		std::stack<gridGraphNode*> st;
+
+		time_t seconds;
+		time(&seconds);
+		srand((unsigned int)seconds);
+
+
+		while (visited.size() < grid.size())
+		{
+			curr->isWall = true;
+			visited.push_back(curr);
+			st.push(curr);
+			auto n = getneighbours(curr);
+			curr++;
+			/*if (!n.empty())
+			{
+				curr = n[0];
+			}
+			else {
+				while (getneighbours(curr).empty())
+				{
+					curr = st.top();
+					st.pop();
+				}
+			}*/
+			if (n.size() > 1)
+			{
+				auto random = rand() % n.size();
+				curr = n[random];
+			}
+			else if (n.size() == 1)
+			{
+				curr = n[0];
+			}
+			else
+			{
+				while (getneighbours(curr).empty())
+				{
+					//curr = st.pop();
+					curr = st.top();
+					st.pop();
+				}
+			}
+		}
+
+		for (auto& i : grid) {
+			if (i.isWall)
+			{
+				i.color = 0xF852FFFF;
+			}
+		}
+
+		return;
 	}
 
 	void expandNode(gridGraphNode* node, const vec2<int>& delpos, const float& weight) {
@@ -434,7 +538,7 @@ public:
 		done = true;
 	}
 
-	void Draw(appState& state, SDL_Renderer* renderer) {
+	void Draw(appState& state, SDL_Renderer* renderer, std::chrono::steady_clock::time_point& stop) {
 		for (auto i : grid)
 			i.draw(renderer, fill);
 		glad_glLineWidth(1);
@@ -469,6 +573,7 @@ public:
 		{
 			if (done)
 			{
+				stop = std::chrono::high_resolution_clock::now();
 				if (thread->joinable())
 					thread->join();
 				delete thread;
@@ -485,7 +590,6 @@ public:
 		newSize.y = viewport->h / rectsize - 1;
 	}
 
-
 	void color(const int& mx, const int& my, const Uint8& flags) {
 		if (!flags)
 			return;
@@ -500,7 +604,7 @@ public:
 
 		if (flags & (1 << 0))
 		{
-			get(x2, y2).color = 0xFF0000FF;
+			get(x2, y2).color = 0xF852FFFF;
 
 			if (&get(x2, y2) == start)
 				start = nullptr;
@@ -508,10 +612,11 @@ public:
 				end = nullptr;
 
 			get(x2, y2).isWall = true;
+
 		}
 		else if (flags & (1 << 1))
 		{
-			get(x2, y2).color = 0xFFFF00FF;
+			get(x2, y2).color = 0x706AFFFF;
 
 			if (&get(x2, y2) == start)
 				start = nullptr;
@@ -546,7 +651,7 @@ public:
 		{
 			if (!i.isWall)
 			{
-				i.color = 0xFFFF00FF;
+				i.color = 0x706AFFFF;
 				i.parent = nullptr;
 			}
 		}
@@ -556,9 +661,33 @@ public:
 			end->color = 0x00FF00FF;
 	}
 
-	void imguiDraw(appState& state, int& combo_selected, Window* window) {
+	void randomfill() {
+
+		time_t seconds;
+		time(&seconds);
+		srand((unsigned int)seconds);
+		bool random = false;
+
+		for (auto& i : grid)
+		{
+			random = 0 + (rand() % (1 - 0 + 1)) == 1;
+			i.isWall = random;
+			if (i.isWall)
+				i.color = 0xF852FFFF;
+			else
+				i.color = 0x706AFFFF;
+			i.visited = false;
+		}
+		start = end = nullptr;
+	}
+
+	void imguiDraw(appState& state, int& combo_selected, Window* window, std::chrono::steady_clock::time_point& start) {
 
 		ImGui::PushItemWidth((float)window->wwidth / 8);
+		ImGui::SameLine();
+		ImGui::Text("cell Size");
+		ImGui::SameLine();
+		ImGui::InputFloat("##rectsize", &rectsize);
 		ImGui::SameLine();
 		ImGui::Text("grid Size");
 		ImGui::SameLine();
@@ -577,19 +706,24 @@ public:
 		{
 			reset();
 		}
+		ImGui::SameLine();
+		if (ImGui::Button("Random"))
+		{
+			randomfill();
+		}
 		//ImGui::SameLine();
 		if (ImGui::Button("Solve"))
 		{
 			reset();
 			switch (combo_selected)
 			{
-			case 9:
+			case 8:
 				thread = new std::thread(&gridGraph::solveAstar, this);
 				break;
-			case 10:
+			case 9:
 				thread = new std::thread(&gridGraph::solveBestFirst, this);
 				break;
-			case 11:
+			case 10:
 				thread = new std::thread(&gridGraph::solveDijkstra, this);
 				break;
 			default:
@@ -599,6 +733,7 @@ public:
 			//thread = new std::thread(&gridGraph::solveDijkstra, this);
 			//solve();
 			state = appState::Animating;
+			start = std::chrono::high_resolution_clock::now();
 		}
 
 		ImGui::SameLine();
@@ -607,4 +742,5 @@ public:
 		ImGui::Checkbox("use diagonal? ", &diagonal);
 
 	}
+
 };
