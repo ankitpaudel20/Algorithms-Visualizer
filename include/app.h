@@ -128,7 +128,7 @@ public:
 					if (evnt.button.button == SDL_BUTTON_LEFT)
 					{
 						buttons |= LMB_held;
-						if (combo_selected > 11)
+						if (combo_selected > 10)
 							if (m_state != appState::Animating)
 								joinGraph->select(mouseX, mouseY);
 					}

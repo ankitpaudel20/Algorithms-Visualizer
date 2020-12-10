@@ -15,7 +15,7 @@ typedef enum {
 class gridGraph {
 	std::vector<gridGraphNode> grid;
 	vec2<int> gridSize, newSize;
-	float rectsize = 10;
+	float rectsize = 20;
 	bool fill = true;
 	bool diagonal = false;
 	heap<gridGraphNode*> check_queue;

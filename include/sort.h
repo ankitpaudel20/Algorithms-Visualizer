@@ -198,6 +198,8 @@ struct sortingClass
 			start = std::chrono::high_resolution_clock::now();
 		}
 
+
+		ImGui::Text("Green denotes Swap and yellow denotes Comparison");
 		/*	ImGui::PushItemWidth(200);
 			ImGui::SliderScalar("sleep time", ImGuiDataType_Float, &sleeptime, &flow, &fhigh);
 			ImGui::PopItemWidth();*/
