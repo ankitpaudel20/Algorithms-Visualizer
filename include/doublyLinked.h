@@ -29,6 +29,7 @@ class listIterator
 {
 public:
 	using ValueType = typename linkedList::ValueType;
+	using DataType=typename linkedList::ValueType::ValueType;
 	using PointerType = ValueType*;
 	using RefrenceType = ValueType&;
 
@@ -83,7 +84,7 @@ public:
 		return *this;
 	}
 
-	auto& operator* () {
+	DataType& operator* () {
 		return m_Ptr->m_data;
 	}
 

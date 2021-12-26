@@ -6,6 +6,11 @@
 #include "SDL2/SDL_ttf.h"
 #include "SDL2/SDL2_gfxPrimitives.h"
 
+#ifdef _WIN32
+#define clock_type std::chrono::steady_clock::time_point
+#else
+#define clock_type std::chrono::system_clock::time_point
+#endif
 
 inline float dist(const float& x1, const float& y1, const float& x2, const float& y2) {
 	return sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));

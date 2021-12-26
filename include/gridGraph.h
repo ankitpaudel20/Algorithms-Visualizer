@@ -538,7 +538,7 @@ public:
 		done = true;
 	}
 
-	void Draw(appState& state, SDL_Renderer* renderer, std::chrono::steady_clock::time_point& stop) {
+	void Draw(appState& state, SDL_Renderer* renderer, clock_type& stop) {
 		for (auto i : grid)
 			i.draw(renderer, fill);
 		glad_glLineWidth(1);
@@ -681,7 +681,7 @@ public:
 		start = end = nullptr;
 	}
 
-	void imguiDraw(appState& state, int& combo_selected, Window* window, std::chrono::steady_clock::time_point& start) {
+	void imguiDraw(appState& state, int& combo_selected, Window* window, clock_type& start) {
 
 		ImGui::PushItemWidth((float)window->wwidth / 8);
 		ImGui::SameLine();

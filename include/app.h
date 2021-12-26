@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <list>
+
 #include "window.h"
 #include "sort.h"
 #include "avl.h"
@@ -47,8 +48,10 @@ public:
 		}
 		std::string path(SDL_GetBasePath());
 		//printf("%s\n", path.append(+"../../../assets/segoeuib.ttf").c_str());
-		//loadfont({ "segoeui", 5 }, path.append(+"../assets/segoeuib.ttf").c_str());
-		loadfont({ "segoeui", 5 }, path.append(+"../../../assets/segoeuib.ttf").c_str());
+		int success=loadfont({ "segoeui", 5 }, path.append(+"../assets/segoeuib.ttf").c_str());
+		// int success=loadfont({ "segoeui", 5 }, path.append(+"../../../assets/segoeuib.ttf").c_str());
+		if(!success)
+			exit(-1);
 
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -106,7 +109,7 @@ public:
 
 	void run()
 	{
-		std::chrono::steady_clock::time_point  start = std::chrono::high_resolution_clock::now();
+		clock_type  start = std::chrono::high_resolution_clock::now();
 		SDL_ShowWindow(m_window->gWindow);
 
 		tree.shared.deltatime = &deltaTime;
@@ -371,7 +374,7 @@ public:
 	}
 public:
 
-	static void loadfont(const fontinfo& info, const std::string& path)
+	static int loadfont(const fontinfo& info, const std::string& path)
 	{
 		if (font_cache[info] == nullptr)
 		{
@@ -380,12 +383,13 @@ public:
 			if (font_cache[info] == nullptr)
 			{
 				printf("\nerror loading font %s : %s", path.c_str(), TTF_GetError());
-				return;
+				return 0;
 			}
 		}
 
 		if (font_path.find(info.name) == font_path.end())
 			font_path[info.name] = path;
+		return 1;
 	}
 
 	static TTF_Font* getfont(const std::string& name, const int& size)
@@ -451,8 +455,8 @@ public:
 
 	int combo_selected = 8;
 
-	std::chrono::steady_clock::time_point  start = std::chrono::high_resolution_clock::now();
-	std::chrono::steady_clock::time_point  end = std::chrono::high_resolution_clock::now();
+	clock_type  start = std::chrono::high_resolution_clock::now();
+	clock_type  end = std::chrono::high_resolution_clock::now();
 };
 
 std::map<std::string, SDL_Texture*> app::text_cache;

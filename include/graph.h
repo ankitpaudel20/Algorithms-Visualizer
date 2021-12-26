@@ -122,7 +122,7 @@ public:
 		}
 	}
 
-	void Draw(appState& state, SDL_Renderer* renderer, std::chrono::steady_clock::time_point& stop) {
+	void Draw(appState& state, SDL_Renderer* renderer, clock_type& stop) {
 		if (!lines.empty())
 		{
 
@@ -167,7 +167,7 @@ public:
 		}
 	}
 
-	void imguiDraw(appState& state, int& combo_selected, Window* window, std::chrono::steady_clock::time_point start) {
+	void imguiDraw(appState& state, int& combo_selected, Window* window, clock_type start) {
 		ImGui::SameLine();
 		ImGui::PushItemWidth((float)window->wwidth / 8);
 		ImGui::InputInt(" | ##num", &newN);

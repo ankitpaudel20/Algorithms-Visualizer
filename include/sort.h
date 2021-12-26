@@ -72,7 +72,7 @@ struct sortingClass
 
 	}
 
-	void Draw(appState& state, SDL_Renderer* renderer, std::chrono::steady_clock::time_point& stop)
+	void Draw(appState& state, SDL_Renderer* renderer, clock_type& stop)
 	{
 		SDL_RenderSetViewport(renderer, viewport);
 
@@ -137,7 +137,7 @@ struct sortingClass
 		//SDL_Rect rect{ width, 0, viewport.w - 2 * width, viewport.h };
 	}
 
-	void imguiDraw(appState& state, int& combo_selected, Window* window, std::chrono::steady_clock::time_point& start) {
+	void imguiDraw(appState& state, int& combo_selected, Window* window, clock_type& start) {
 		ImGui::SameLine();
 		ImGui::PushItemWidth((float)window->wwidth / 13);
 		ImGui::SameLine();
