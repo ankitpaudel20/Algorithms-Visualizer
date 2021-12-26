@@ -8,18 +8,18 @@ set_property(TARGET Application PROPERTY CXX_STANDARD 11)
 
 target_include_directories(Application PRIVATE include vendor/imgui vendor/include)
 
-      file(GLOB_RECURSE SDL2_GFX_SOURCES vendor/include/SDL2/*.c)
+file(GLOB_RECURSE SDL2_GFX_SOURCES vendor/include/SDL2/*.c)
 
-      target_sources(Application PRIVATE 
-        vendor/imgui/imgui.cpp
-        vendor/imgui/imgui_widgets.cpp
-        vendor/imgui/imgui_demo.cpp
-        vendor/imgui/imgui_draw.cpp
-        vendor/imgui/imgui_impl_sdl.cpp
-        vendor/imgui/imgui_impl_opengl3.cpp
-        vendor/glad/glad.c
-        sorts.cpp
-        ${SDL2_GFX_SOURCES})
+target_sources(Application PRIVATE 
+vendor/imgui/imgui.cpp
+vendor/imgui/imgui_widgets.cpp
+vendor/imgui/imgui_demo.cpp
+vendor/imgui/imgui_draw.cpp
+vendor/imgui/imgui_impl_sdl.cpp
+vendor/imgui/imgui_impl_opengl3.cpp
+vendor/glad/glad.c
+sorts.cpp
+${SDL2_GFX_SOURCES})
 
 
 
